@@ -1,0 +1,647 @@
+// Stratford AI - Multi-Domain Wealth Engine Database Schema
+// Production-ready schema with PostgreSQL + TimescaleDB extensions
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// User Management & Authentication (NextAuth + Custom Extensions)
+// =============================================================================
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  username    String?  @unique
+  firstName   String?
+  lastName    String?
+  name        String?
+  avatar      String?
+  image       String?
+
+  // Authentication
+  passwordHash String?
+  emailVerified DateTime?
+  twoFactorEnabled Boolean @default(false)
+
+  // Profile & Preferences
+  timezone    String   @default("UTC")
+  language    String   @default("en")
+  theme       String   @default("dark")
+
+  // Subscription & Limits
+  subscriptionTier String @default("free") // free, premium, enterprise
+  apiCallsUsed     Int    @default(0)
+  apiCallsLimit    Int    @default(1000)
+
+  // KYC/AML Status
+  kycStatus       String  @default("PENDING") // PENDING, VERIFIED, REJECTED
+  amlStatus       String  @default("PENDING") // PENDING, CLEARED, FLAGGED
+  riskLevel       String  @default("MEDIUM")  // LOW, MEDIUM, HIGH
+
+  // Role & Permissions
+  role            String  @default("USER")    // USER, TRADER, ADMIN, COMPLIANCE
+  permissions     String[]
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLoginAt DateTime?
+
+  // NextAuth Relations
+  accounts      Account[]
+  sessions      Session[]
+
+  // Custom Relations
+  portfolios    Portfolio[]
+  strategies    Strategy[]
+  backtests     Backtest[]
+  alerts        Alert[]
+  apiKeys       ApiKey[]
+  userSessions  UserSession[]
+  activities    UserActivity[]
+  kycRecords    KycRecord[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  resource  String?
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("user_activities")
+}
+
+// =============================================================================
+// Portfolio & Trading Management
+// =============================================================================
+
+model Portfolio {
+  id          String  @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+
+  // Portfolio Configuration
+  currency    String  @default("USD")
+  initialValue Decimal @db.Decimal(15, 2)
+  currentValue Decimal @db.Decimal(15, 2)
+
+  // Risk Management
+  maxDrawdown     Decimal? @db.Decimal(5, 2)
+  riskTolerance   String   @default("medium") // low, medium, high
+
+  // Status
+  isActive    Boolean @default(true)
+  isPublic    Boolean @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  positions  Position[]
+  trades     Trade[]
+  strategies Strategy[]
+
+  @@map("portfolios")
+}
+
+model Position {
+  id          String @id @default(cuid())
+  portfolioId String
+  symbol      String
+
+  // Position Details
+  quantity       Decimal @db.Decimal(15, 8)
+  averagePrice   Decimal @db.Decimal(15, 2)
+  currentPrice   Decimal @db.Decimal(15, 2)
+  marketValue    Decimal @db.Decimal(15, 2)
+
+  // P&L
+  unrealizedPnL  Decimal @db.Decimal(15, 2)
+  realizedPnL    Decimal @db.Decimal(15, 2)
+
+  // Position Type
+  positionType   String  // LONG, SHORT
+  assetClass     String  // STOCK, CRYPTO, OPTION, FUTURE
+
+  // Timestamps
+  openedAt       DateTime
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  trades    Trade[]
+
+  @@unique([portfolioId, symbol])
+  @@map("positions")
+}
+
+model Trade {
+  id          String @id @default(cuid())
+  portfolioId String
+  positionId  String?
+
+  // Trade Details
+  symbol      String
+  side        String  // BUY, SELL
+  quantity    Decimal @db.Decimal(15, 8)
+  price       Decimal @db.Decimal(15, 2)
+  totalValue  Decimal @db.Decimal(15, 2)
+
+  // Fees & Costs
+  commission  Decimal @db.Decimal(15, 2) @default(0)
+  fees        Decimal @db.Decimal(15, 2) @default(0)
+
+  // Trade Metadata
+  tradeType   String  // MARKET, LIMIT, STOP_LOSS, TAKE_PROFIT
+  timeInForce String  @default("GTC") // GTC, IOC, FOK
+  strategyId  String?
+
+  // P&L (for closed trades)
+  pnl         Decimal? @db.Decimal(15, 2)
+
+  // Status & Timestamps
+  status      String   @default("PENDING") // PENDING, FILLED, PARTIAL, CANCELLED
+  executedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  position  Position? @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  strategy  Strategy? @relation(fields: [strategyId], references: [id], onDelete: SetNull)
+
+  @@index([portfolioId, executedAt])
+  @@index([symbol, executedAt])
+  @@map("trades")
+}
+
+// =============================================================================
+// Strategy & Backtesting
+// =============================================================================
+
+model Strategy {
+  id          String @id @default(cuid())
+  userId      String
+  portfolioId String?
+
+  // Strategy Details
+  name        String
+  description String?
+  category    String  // TECHNICAL, FUNDAMENTAL, QUANTITATIVE, ARBITRAGE
+
+  // Strategy Configuration
+  parameters  Json
+  rules       Json
+
+  // Performance Metrics
+  totalReturn     Decimal? @db.Decimal(10, 4)
+  sharpeRatio     Decimal? @db.Decimal(10, 4)
+  maxDrawdown     Decimal? @db.Decimal(10, 4)
+  winRate         Decimal? @db.Decimal(5, 2)
+
+  // Status
+  isActive    Boolean @default(true)
+  isPublic    Boolean @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portfolio  Portfolio? @relation(fields: [portfolioId], references: [id], onDelete: SetNull)
+  backtests  Backtest[]
+  trades     Trade[]
+
+  @@map("strategies")
+}
+
+model Backtest {
+  id         String @id @default(cuid())
+  strategyId String
+
+  // Backtest Configuration
+  name       String
+  startDate  DateTime
+  endDate    DateTime
+  symbols    String[]
+
+  // Initial Conditions
+  initialCapital Decimal @db.Decimal(15, 2)
+  benchmark      String?
+
+  // Results
+  results        Json
+  trades         Json
+
+  // Performance Metrics
+  totalReturn    Decimal? @db.Decimal(10, 4)
+  annualReturn   Decimal? @db.Decimal(10, 4)
+  volatility     Decimal? @db.Decimal(10, 4)
+  sharpeRatio    Decimal? @db.Decimal(10, 4)
+  sortinoRatio   Decimal? @db.Decimal(10, 4)
+  maxDrawdown    Decimal? @db.Decimal(10, 4)
+  winRate        Decimal? @db.Decimal(5, 2)
+
+  // Status
+  status     String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+
+  // Timestamps
+  createdAt  DateTime @default(now())
+  completedAt DateTime?
+
+  // Relations
+  strategy Strategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@index([strategyId, createdAt])
+  @@map("backtests")
+}
+
+// =============================================================================
+// Market Data & Time Series (TimescaleDB)
+// =============================================================================
+
+model MarketDataPoint {
+  id       String   @id @default(cuid())
+  symbol   String
+
+  // OHLCV Data
+  timestamp DateTime
+  open      Decimal  @db.Decimal(15, 8)
+  high      Decimal  @db.Decimal(15, 8)
+  low       Decimal  @db.Decimal(15, 8)
+  close     Decimal  @db.Decimal(15, 8)
+  volume    Decimal  @db.Decimal(20, 0)
+
+  // Additional Data
+  adjustedClose Decimal? @db.Decimal(15, 8)
+  splitRatio    Decimal? @db.Decimal(10, 4)
+  dividendAmount Decimal? @db.Decimal(15, 8)
+
+  // Data Source
+  source    String
+  interval  String // 1m, 5m, 15m, 1h, 1d, etc.
+
+  @@unique([symbol, timestamp, interval, source])
+  @@index([symbol, timestamp])
+  @@index([timestamp])
+  @@map("market_data_points")
+}
+
+model TechnicalIndicator {
+  id        String   @id @default(cuid())
+  symbol    String
+  timestamp DateTime
+
+  // Indicator Details
+  name      String
+  value     Decimal  @db.Decimal(15, 8)
+  parameters Json?
+
+  // Metadata
+  timeframe String
+  source    String
+
+  @@unique([symbol, timestamp, name, timeframe])
+  @@index([symbol, name, timestamp])
+  @@map("technical_indicators")
+}
+
+// =============================================================================
+// Alerts & Notifications
+// =============================================================================
+
+model Alert {
+  id       String @id @default(cuid())
+  userId   String
+
+  // Alert Configuration
+  name     String
+  symbol   String?
+
+  // Conditions
+  condition Json
+
+  // Notification Settings
+  channels  String[] // EMAIL, SMS, PUSH, WEBHOOK
+  isEnabled Boolean  @default(true)
+
+  // Trigger History
+  lastTriggered DateTime?
+  triggerCount  Int      @default(0)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, symbol])
+  @@map("alerts")
+}
+
+// =============================================================================
+// API Keys & External Integrations
+// =============================================================================
+
+model ApiKey {
+  id          String @id @default(cuid())
+  userId      String
+
+  // Key Details
+  name        String
+  keyValue    String @unique
+  provider    String // ALPHA_VANTAGE, BINANCE, POLYGON, etc.
+
+  // Configuration
+  permissions String[]
+  rateLimit   Int?
+
+  // Usage Tracking
+  callsUsed   Int      @default(0)
+  lastUsedAt  DateTime?
+
+  // Status
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime?
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+// =============================================================================
+// System & Performance Metrics
+// =============================================================================
+
+model SystemMetric {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+
+  // Metric Details
+  name      String
+  value     Decimal  @db.Decimal(15, 4)
+  unit      String?
+  tags      Json?
+
+  // Metadata
+  source    String
+
+  @@index([name, timestamp])
+  @@index([timestamp])
+  @@map("system_metrics")
+}
+
+// =============================================================================
+// KYC/AML & Compliance Models
+// =============================================================================
+
+model KycRecord {
+  id                String   @id @default(cuid())
+  userId            String
+
+  // Personal Information
+  fullName          String
+  dateOfBirth       DateTime
+  nationality       String
+  ssn               String?    // Encrypted
+
+  // Address Information
+  streetAddress     String
+  city              String
+  state             String
+  zipCode           String
+  country           String
+
+  // Identity Verification
+  documentType      String     // PASSPORT, DRIVERS_LICENSE, NATIONAL_ID
+  documentNumber    String     // Encrypted
+  documentExpiry    DateTime
+  documentImages    String[]   // Encrypted file paths
+
+  // Verification Status
+  status            String     @default("PENDING") // PENDING, VERIFIED, REJECTED, EXPIRED
+  verifiedBy        String?
+  verifiedAt        DateTime?
+  rejectionReason   String?
+
+  // Risk Assessment
+  riskScore         Int?       @default(0)
+  riskFactors       String[]
+
+  // Metadata
+  ipAddress         String?
+  userAgent         String?
+  submittedAt       DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  // Relations
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("kyc_records")
+}
+
+model AmlAlert {
+  id                String   @id @default(cuid())
+  userId            String?
+
+  // Alert Details
+  alertType         String     // SUSPICIOUS_TRANSACTION, HIGH_RISK_CUSTOMER, WATCHLIST_MATCH
+  severity          String     // LOW, MEDIUM, HIGH, CRITICAL
+  description       String
+
+  // Transaction Context
+  transactionId     String?
+  amount            Decimal?   @db.Decimal(15, 2)
+  currency          String?
+
+  // Risk Indicators
+  riskScore         Int
+  riskFactors       String[]
+
+  // Watchlist Information
+  watchlistType     String?    // OFAC, EU_SANCTIONS, PEP, ADVERSE_MEDIA
+  matchDetails      Json?
+
+  // Investigation
+  status            String     @default("OPEN") // OPEN, INVESTIGATING, RESOLVED, FALSE_POSITIVE
+  assignedTo        String?
+  investigationNotes String?
+  resolution        String?
+  resolvedAt        DateTime?
+
+  // Timestamps
+  triggeredAt       DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([userId, severity, status])
+  @@index([triggeredAt])
+  @@map("aml_alerts")
+}
+
+model SuspiciousActivityReport {
+  id                String   @id @default(cuid())
+  userId            String
+
+  // SAR Details
+  sarNumber         String     @unique
+  reportType        String     // SUSPICIOUS_TRANSACTION, MONEY_LAUNDERING, TERRORIST_FINANCING
+
+  // Transaction Information
+  suspiciousAmount  Decimal    @db.Decimal(15, 2)
+  transactionDate   DateTime
+  description       String
+
+  // Subject Information
+  subjectName       String
+  subjectType       String     // INDIVIDUAL, ENTITY
+  subjectDetails    Json
+
+  // Filing Information
+  filedBy           String
+  filedAt           DateTime
+  filingStatus      String     @default("DRAFT") // DRAFT, FILED, ACKNOWLEDGED
+
+  // Regulatory Response
+  acknowledgmentNumber String?
+  regulatorResponse Json?
+
+  // Metadata
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([userId, filingStatus])
+  @@index([filedAt])
+  @@map("suspicious_activity_reports")
+}
+
+// =============================================================================
+// Data Retention & Compliance
+// =============================================================================
+
+model DataRetentionPolicy {
+  id                String   @id @default(cuid())
+
+  // Policy Details
+  name              String
+  dataType          String     // USER_DATA, TRANSACTION_DATA, COMMUNICATION_DATA
+  retentionPeriod   Int        // Days
+
+  // Regulatory Basis
+  regulation        String     // SEC, FINRA, GDPR, CCPA
+  jurisdiction      String
+
+  // Automation
+  isActive          Boolean    @default(true)
+  lastAppliedAt     DateTime?
+
+  // Metadata
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@map("data_retention_policies")
+}
+
+model DataDeletionLog {
+  id                String   @id @default(cuid())
+
+  // Deletion Details
+  dataType          String
+  recordId          String
+  deletionReason    String     // RETENTION_EXPIRED, USER_REQUEST, LEGAL_ORDER
+
+  // Audit Information
+  deletedBy         String
+  deletedAt         DateTime   @default(now())
+  approvedBy        String?
+
+  // Regulatory Compliance
+  retentionPolicyId String?
+  legalBasis        String?
+
+  // Metadata
+  recordHash        String     // Hash of deleted data for verification
+  backupLocation    String?    // For regulatory archives
+
+  @@index([dataType, deletedAt])
+  @@map("data_deletion_logs")
+}
