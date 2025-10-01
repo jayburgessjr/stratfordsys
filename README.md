@@ -1,2 +1,0 @@
-# stratfordsys
-an app
