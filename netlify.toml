@@ -1,14 +1,10 @@
 [build]
   publish = "out"
-  command = "pnpm build:netlify"
+  command = "pnpm install --frozen-lockfile=false && pnpm build:netlify"
 
 [build.environment]
   NODE_VERSION = "20"
-  PNPM_VERSION = "8.10.5"
-
-# Enable pnpm for Netlify
-[[plugins]]
-  package = "netlify-plugin-pnpm"
+  NPM_FLAGS = "--version"
 
 # Headers for security and performance
 [[headers]]
