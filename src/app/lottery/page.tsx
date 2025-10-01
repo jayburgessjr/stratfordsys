@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart, Target, TrendingUp, Zap, RefreshCw } from 'lucide-react';
+import { Target, TrendingUp, Zap, RefreshCw } from 'lucide-react';
 
 interface LotteryNumbers {
   main: number[];

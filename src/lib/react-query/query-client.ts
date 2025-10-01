@@ -260,7 +260,7 @@ export const queryErrorHandler = (error: Error, query: any) => {
   })
 
   // Report to monitoring service
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env['NODE_ENV'] === 'production') {
     // Could integrate with Sentry or other error tracking
   }
 }
@@ -291,7 +291,7 @@ export const persistQueryClient = {
 
 // Development tools configuration
 export const reactQueryDevtools = {
-  initialIsOpen: process.env.NODE_ENV === 'development',
+  initialIsOpen: process.env['NODE_ENV'] === 'development',
   position: 'bottom-right' as const,
   buttonPosition: 'bottom-right' as const,
 }

@@ -12,7 +12,7 @@ interface CSRFOptions {
 }
 
 const defaultOptions: Required<CSRFOptions> = {
-  secret: process.env.NEXTAUTH_SECRET || 'default-csrf-secret',
+  secret: process.env['NEXTAUTH_SECRET'] || 'default-csrf-secret',
   tokenLength: 32,
   cookieName: 'csrf-token',
   headerName: 'x-csrf-token',
@@ -103,7 +103,7 @@ export async function getCSRFToken(req: NextApiRequest, res: NextApiResponse) {
 
   const session = await getSession({ req })
   const sessionId = session?.user?.id
-  const secret = process.env.NEXTAUTH_SECRET || 'default-csrf-secret'
+  const secret = process.env['NEXTAUTH_SECRET'] || 'default-csrf-secret'
 
   const token = generateCSRFToken(secret, sessionId)
 
@@ -169,7 +169,7 @@ export function withSecurityHeaders() {
     res.setHeader('X-XSS-Protection', '1; mode=block')
 
     // HTTPS enforcement in production
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env['NODE_ENV'] === 'production') {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
     }
 

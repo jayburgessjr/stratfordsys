@@ -79,7 +79,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     }
 
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.error('Error Boundary caught an error:', error)
       console.error('Component Stack:', errorInfo.componentStack)
     }
@@ -185,7 +185,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
               </p>
             </div>
 
-            {process.env.NODE_ENV === 'development' && error && (
+            {process.env['NODE_ENV'] === 'development' && error && (
               <div className="mb-6 text-left">
                 <details className="bg-gray-100 rounded p-3">
                   <summary className="cursor-pointer text-sm font-medium text-gray-700">

@@ -222,7 +222,7 @@ class ErrorTrackingService {
     // Create full context
     const fullContext: ErrorContext = {
       timestamp,
-      environment: (process.env.NODE_ENV as any) || 'development',
+      environment: (process.env['NODE_ENV'] as any) || 'development',
       buildVersion: process.env.BUILD_VERSION,
       ...this.getDefaultContext(),
       ...context,

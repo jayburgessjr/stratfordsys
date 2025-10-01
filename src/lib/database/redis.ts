@@ -28,7 +28,7 @@ export class RedisService {
   private subRedis: RedisType
 
   private constructor() {
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
+    const redisUrl = process.env['REDIS_URL'] || 'redis://localhost:6379'
 
     // Main Redis connection
     this.redis = new Redis(redisUrl, {

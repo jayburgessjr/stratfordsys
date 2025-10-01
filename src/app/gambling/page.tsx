@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Dice1, TrendingUp, Target, Zap, DollarSign, Trophy } from 'lucide-react';
 
 export default function GamblingPage() {
-  const [selectedStrategy, setSelectedStrategy] = useState<string>('');
+  const [_selectedStrategy, setSelectedStrategy] = useState<string>('');
 
   const casinoStrategies = [
     {

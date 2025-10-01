@@ -283,7 +283,7 @@ class MongoDBService {
     if (this.isConnected) return
 
     try {
-      const mongoUrl = process.env.MONGODB_URL || 'mongodb://localhost:27017/stratford_ai'
+      const mongoUrl = process.env['MONGODB_URL'] || 'mongodb://localhost:27017/stratford_ai'
 
       await mongoose.connect(mongoUrl, {
         maxPoolSize: 10,

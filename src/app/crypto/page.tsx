@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,8 @@ import { Progress } from '@/components/ui/progress';
 import { Bitcoin, TrendingUp, TrendingDown, Zap, Target, AlertTriangle } from 'lucide-react';
 
 export default function CryptoPage() {
-  const [selectedCoin, setSelectedCoin] = useState<string>('');
+  // TODO: Implement coin selection functionality
+  // const [selectedCoin, setSelectedCoin] = useState<string>('');
 
   const cryptoPortfolio = [
     {

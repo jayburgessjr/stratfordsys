@@ -265,7 +265,7 @@ This is an automated error report from Stratford AI Trading Platform.
             </div>
           )}
 
-          {process.env.NODE_ENV === 'development' && error && (
+          {process.env['NODE_ENV'] === 'development' && error && (
             <div className="mb-4">
               <details className="bg-gray-100 rounded p-3">
                 <summary className="cursor-pointer text-sm font-medium text-gray-700">

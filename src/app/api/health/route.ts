@@ -48,12 +48,12 @@ export async function GET() {
     const healthResponse: HealthResponse = {
       status: isHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
-      version: process.env.STRATFORD_VERSION || '1.0.0',
-      environment: process.env.NODE_ENV || 'development',
+      version: process.env['STRATFORD_VERSION'] || '1.0.0',
+      environment: process.env['NODE_ENV'] || 'development',
       uptime: Math.floor(uptime),
       build: {
-        time: process.env.BUILD_TIME || new Date().toISOString(),
-        id: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'local',
+        time: process.env['BUILD_TIME'] || new Date().toISOString(),
+        id: process.env['VERCEL_GIT_COMMIT_SHA']?.slice(0, 7) || 'local',
       },
       services,
       metrics: {
@@ -79,12 +79,12 @@ export async function GET() {
     const errorResponse: HealthResponse = {
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      version: process.env.STRATFORD_VERSION || '1.0.0',
-      environment: process.env.NODE_ENV || 'development',
+      version: process.env['STRATFORD_VERSION'] || '1.0.0',
+      environment: process.env['NODE_ENV'] || 'development',
       uptime: Math.floor(process.uptime()),
       build: {
-        time: process.env.BUILD_TIME || new Date().toISOString(),
-        id: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'local',
+        time: process.env['BUILD_TIME'] || new Date().toISOString(),
+        id: process.env['VERCEL_GIT_COMMIT_SHA']?.slice(0, 7) || 'local',
       },
       services: {
         database: 'disconnected',

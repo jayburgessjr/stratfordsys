@@ -35,8 +35,8 @@ const defaultConfig: MonitoringConfig = {
     provider: 'custom',
     apiKey: process.env.APM_API_KEY || '',
     appName: 'stratford-ai',
-    environment: (process.env.NODE_ENV as any) || 'development',
-    sampleRate: process.env.NODE_ENV === 'production' ? 1.0 : 0.1,
+    environment: (process.env['NODE_ENV'] as any) || 'development',
+    sampleRate: process.env['NODE_ENV'] === 'production' ? 1.0 : 0.1,
     enableRealUserMonitoring: true,
     enableDistributedTracing: true,
   },
@@ -47,7 +47,7 @@ const defaultConfig: MonitoringConfig = {
     flushInterval: 5000,
   },
   alerting: {
-    enabled: process.env.NODE_ENV === 'production',
+    enabled: process.env['NODE_ENV'] === 'production',
     defaultCooldown: 600, // 10 minutes
     escalationEnabled: true,
   },

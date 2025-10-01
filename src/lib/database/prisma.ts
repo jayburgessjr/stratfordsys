@@ -8,16 +8,16 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: process.env['NODE_ENV'] === 'development' ? ['query', 'error', 'warn'] : ['error'],
     datasources: {
       db: {
-        url: process.env.DATABASE_URL,
+        url: process.env['DATABASE_URL'],
       },
     },
   })
 
 // Prevent multiple instances of PrismaClient in development
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (process.env['NODE_ENV'] !== 'production') globalForPrisma.prisma = prisma
 
 // Connection health check
 export async function checkDatabaseConnection(): Promise<boolean> {
