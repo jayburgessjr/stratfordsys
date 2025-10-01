@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
+import { AILotteryAnalyzer } from '@/components/ai/ai-lottery-analyzer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -151,6 +152,9 @@ export default function LotteryPage() {
             Deterministic Engine
           </Badge>
         </div>
+
+        {/* AI Lottery Analyzer */}
+        <AILotteryAnalyzer />
 
         <Tabs defaultValue="generator" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">

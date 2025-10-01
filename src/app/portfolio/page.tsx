@@ -1,6 +1,7 @@
 'use client';
 
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
+import { AIPortfolioAdvisor } from '@/components/ai/ai-portfolio-advisor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Database, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
@@ -27,6 +28,9 @@ export default function PortfolioPage() {
             </p>
           </div>
         </div>
+
+        {/* AI Portfolio Advisor */}
+        <AIPortfolioAdvisor />
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
