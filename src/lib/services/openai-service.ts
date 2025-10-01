@@ -52,7 +52,7 @@ class OpenAIService {
   private model: string = 'gpt-4o-mini'; // Cost-effective model
 
   constructor(apiKey?: string) {
-    const key = apiKey || process.env.OPENAI_API_KEY;
+    const key = apiKey || process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
 
     if (!key) {
       throw new Error('OpenAI API key not provided');
