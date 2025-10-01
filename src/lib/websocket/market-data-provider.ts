@@ -61,11 +61,26 @@ export class MarketDataProvider {
       return
     }
 
-    // Use mock WebSocket URL if no real endpoint provided
-    const url = wsUrl || this.getMockWebSocketUrl()
+    // For mock mode, skip WebSocket connection and go straight to simulation
+    if (!wsUrl) {
+      // Create a mock WebSocket client that reports as connected
+      this.wsClient = {
+        isConnected: () => true,
+        send: () => {},
+        disconnect: () => {},
+        subscribe: () => {},
+        unsubscribe: () => {},
+        connect: async () => {}
+      } as any
 
+      // Start mock data generation immediately
+      this.startMockDataSimulation()
+      return
+    }
+
+    // Real WebSocket connection (only used if wsUrl is provided)
     this.wsClient = createWebSocketClient({
-      url,
+      url: wsUrl,
       reconnectInterval: 2000,
       maxReconnectAttempts: 10,
       heartbeatInterval: 30000
@@ -78,11 +93,6 @@ export class MarketDataProvider {
     this.wsClient.subscribe('pong', this.handlePong.bind(this))
 
     await this.wsClient.connect()
-
-    // If using mock data, start the simulation
-    if (!wsUrl) {
-      this.startMockDataSimulation()
-    }
   }
 
   disconnect(): void {

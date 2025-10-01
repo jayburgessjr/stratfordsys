@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { MarketOverview } from '@/components/dashboard/market-overview';
+import { RealMarketDataWidget } from '@/components/dashboard/real-market-data-widget';
 import { DemoPerformanceOverview } from '@/components/dashboard/demo-performance-overview';
 import { DemoEquityCurveChart } from '@/components/dashboard/demo-equity-curve-chart';
 import { DemoTradingActivity } from '@/components/dashboard/demo-trading-activity';
@@ -23,6 +24,11 @@ export default function Dashboard() {
             Comprehensive wealth generation across stocks, crypto, lottery, gambling, and arbitrage opportunities
           </p>
         </div>
+
+        {/* Real Market Data (Live from Alpha Vantage) */}
+        <Suspense fallback={<LoadingSpinner />}>
+          <RealMarketDataWidget />
+        </Suspense>
 
         {/* Real-time Market Overview */}
         <Suspense fallback={<LoadingSpinner />}>

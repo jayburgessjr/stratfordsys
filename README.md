@@ -292,23 +292,133 @@ describe('Trading Engine', () => {
 
 ## 🚀 Deployment
 
-### Environment Variables
+### Environment Variables & API Keys
+
+#### ✅ **Works Out of the Box (No API Keys Required)**
+
+The application runs perfectly without any API keys using:
+- **Deterministic mock data** with seeded randomness
+- **Simulated trading** with realistic market behavior
+- **All features functional** (trading, crypto, lottery, gambling, analytics)
+
+Simply run `pnpm dev` and start using the app immediately!
+
+#### 🔑 **Optional API Keys (For Live Market Data)**
+
+Only needed if you want **real market data** instead of simulated data:
+
+**1. Alpha Vantage API** (Recommended - Free tier available)
 ```bash
-# Database
-DATABASE_URL="postgresql://..."
-REDIS_URL="redis://..."
-MONGODB_URL="mongodb://..."
-
-# Authentication
-NEXTAUTH_SECRET="your-secret-key"
-NEXTAUTH_URL="https://your-domain.com"
-
-# Encryption
-ENCRYPTION_MASTER_KEY="32-character-encryption-key"
-
-# External APIs
-ALPHA_VANTAGE_API_KEY="your-api-key"
+# Get free API key from: https://www.alphavantage.co/support/#api-key
+ALPHA_VANTAGE_API_KEY="your-api-key-here"
 ```
+- **Used for**: Real-time stock prices, crypto data, forex rates
+- **Free tier**: 5 API calls/minute, 500 calls/day
+- **Cost**: Free tier sufficient for development
+
+**2. Polygon.io API** (Optional alternative)
+```bash
+# Get from: https://polygon.io
+POLYGON_API_KEY="your-polygon-api-key"
+```
+- **Used for**: Alternative stock market data provider
+- **Free tier**: Delayed data (15-minute delay)
+
+**3. IEX Cloud API** (Optional alternative)
+```bash
+# Get from: https://iexcloud.io
+IEX_CLOUD_API_KEY="your-iex-cloud-api-key"
+```
+- **Used for**: Alternative financial data provider
+- **Free tier**: 50,000 messages/month
+
+#### 🗄️ **Optional Database Configuration**
+
+Only needed for **persistent data** and **multi-user setups**:
+
+```bash
+# PostgreSQL (Primary Database)
+DATABASE_URL="postgresql://stratford_user:your_password@localhost:5432/stratford_dev"
+
+# Redis (Cache & Sessions)
+REDIS_URL="redis://localhost:6379"
+
+# MongoDB (Document Storage - Optional)
+MONGODB_URL="mongodb://localhost:27017/stratford_dev"
+```
+
+**Default behavior**: Uses in-memory storage for development
+
+#### 🔐 **Optional Authentication**
+
+Only needed for **user login** and **multi-user access**:
+
+```bash
+# NextAuth.js Configuration
+NEXTAUTH_SECRET="your-32-character-nextauth-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+
+# OAuth Providers (Optional)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+GITHUB_ID="your-github-client-id"
+GITHUB_SECRET="your-github-client-secret"
+```
+
+**Default behavior**: Single-user mode without authentication
+
+#### 🔒 **Optional Encryption & Security**
+
+Only needed for **production deployments** with sensitive data:
+
+```bash
+# Encryption Master Key (32 characters)
+ENCRYPTION_MASTER_KEY="your-32-character-encryption-master-key"
+
+# JWT Configuration
+JWT_SECRET="your-jwt-secret-key"
+JWT_EXPIRES_IN="1h"
+```
+
+#### 📊 **Optional Monitoring & Analytics**
+
+Only needed for **production monitoring**:
+
+```bash
+# Error Tracking
+SENTRY_DSN="your-sentry-dsn"
+
+# Application Performance Monitoring
+DATADOG_API_KEY="your-datadog-api-key"
+NEW_RELIC_LICENSE_KEY="your-new-relic-license-key"
+```
+
+#### 🚀 **Quick Start Guide**
+
+**Option A: Run Immediately (No Setup)**
+```bash
+pnpm install
+pnpm dev
+# Visit http://localhost:3000
+# All features work with mock data!
+```
+
+**Option B: Add Live Market Data**
+```bash
+# 1. Get free Alpha Vantage API key
+# Visit: https://www.alphavantage.co/support/#api-key
+
+# 2. Create .env.local file
+cp .env.example .env.local
+
+# 3. Add your API key
+echo "ALPHA_VANTAGE_API_KEY=your_key_here" >> .env.local
+
+# 4. Start the app
+pnpm dev
+```
+
+**Complete reference**: See `.env.example` for all available configuration options.
 
 ### CI/CD Pipeline
 The project includes a comprehensive CI/CD pipeline with:
