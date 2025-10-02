@@ -5,10 +5,9 @@ import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { MarketOverview } from '@/components/dashboard/market-overview';
 import { PortfolioQuickStats } from '@/components/dashboard/portfolio-quick-stats';
 import { DemoPerformanceOverview } from '@/components/dashboard/demo-performance-overview';
-import { AdditionalPortfolioStats } from '@/components/dashboard/additional-portfolio-stats';
 import { DemoEquityCurveChart } from '@/components/dashboard/demo-equity-curve-chart';
-import { DemoTradingActivity } from '@/components/dashboard/demo-trading-activity';
-import { DemoRiskAnalysis } from '@/components/dashboard/demo-risk-analysis';
+import { LiveSportsLotteryNews } from '@/components/dashboard/live-sports-lottery-news';
+import { AITradingSignals } from '@/components/dashboard/ai-trading-signals';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function Dashboard() {
@@ -37,23 +36,18 @@ export default function Dashboard() {
           <DemoPerformanceOverview />
         </Suspense>
 
-        {/* Portfolio Stats - Row 3: 4 Columns */}
-        <Suspense fallback={<LoadingSpinner />}>
-          <AdditionalPortfolioStats />
-        </Suspense>
-
-        {/* Portfolio Analytics: Equity Curve, Win/Loss, Drawdown */}
+        {/* Portfolio Analytics: Equity Curve, Live News, AI Signals */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Suspense fallback={<LoadingSpinner />}>
             <DemoEquityCurveChart />
           </Suspense>
 
           <Suspense fallback={<LoadingSpinner />}>
-            <DemoTradingActivity />
+            <LiveSportsLotteryNews />
           </Suspense>
 
           <Suspense fallback={<LoadingSpinner />}>
-            <DemoRiskAnalysis />
+            <AITradingSignals />
           </Suspense>
         </div>
 

@@ -7,15 +7,6 @@ export function DemoPerformanceOverview() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <GradientStatCard
-        title="Total Portfolio Value"
-        value="$124,567"
-        subtitle="Overall wealth across all platforms"
-        icon={DollarSign}
-        gradient="blue"
-        trend={{ value: "$8,450", isPositive: true }}
-      />
-
-      <GradientStatCard
         title="Monthly Returns"
         value="+18.2%"
         subtitle="Average monthly performance"
@@ -39,7 +30,16 @@ export function DemoPerformanceOverview() {
         subtitle="Risk-adjusted returns"
         icon={Target}
         gradient="orange"
-        trend={{ value: "23 days", isPositive: true }}
+        trend={{ value: "Above 1.0 = Good", isPositive: true }}
+      />
+
+      <GradientStatCard
+        title="Max Drawdown"
+        value="8.7%"
+        subtitle="Largest peak-to-trough decline"
+        icon={Shield}
+        gradient="teal"
+        trend={{ value: "Low risk", isPositive: true }}
       />
     </div>
   );

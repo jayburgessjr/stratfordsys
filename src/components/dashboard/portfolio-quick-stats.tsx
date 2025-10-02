@@ -35,12 +35,12 @@ export function PortfolioQuickStats() {
       />
 
       <GradientStatCard
-        title="Today's Trades"
-        value="12"
-        subtitle="8 wins, 4 losses"
+        title="Today's Change"
+        value="+$2,341"
+        subtitle="Daily profit & loss"
         icon={TrendingUp}
         gradient="orange"
-        trend={{ value: "66% win rate", isPositive: true }}
+        trend={{ value: "+12.5%", isPositive: true }}
       />
     </>
   );
