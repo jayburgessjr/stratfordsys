@@ -55,19 +55,19 @@ export function MarketOverview() {
   // Fetch real market data
   const indicesData = useRealMarketData({
     symbols: ['SPY', 'QQQ', 'IWM', 'VIX'],
-    refreshInterval: 60000,
+    refreshInterval: 300000, // Refresh every 5 minutes
     enabled: true,
   });
 
   const cryptoData = useRealMarketData({
     symbols: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD'],
-    refreshInterval: 60000,
+    refreshInterval: 300000, // Refresh every 5 minutes
     enabled: true,
   });
 
   const topMoversData = useRealMarketData({
     symbols: ['NVDA', 'TSLA', 'AAPL', 'MSFT'],
-    refreshInterval: 60000,
+    refreshInterval: 300000, // Refresh every 5 minutes
     enabled: true,
   });
 

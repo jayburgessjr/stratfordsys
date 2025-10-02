@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getRealMarketDataService, RealTimeQuote } from '@/lib/services/real-market-data';
 
 interface UseRealMarketDataOptions {
@@ -24,8 +24,18 @@ export function useRealMarketData(options: UseRealMarketDataOptions): UseRealMar
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<number | null>(null);
 
+  // Use ref to store symbols to avoid infinite re-renders
+  const symbolsRef = useRef<string[]>(symbols);
+  const enabledRef = useRef<boolean>(enabled);
+
+  // Update refs when props change
+  useEffect(() => {
+    symbolsRef.current = symbols;
+    enabledRef.current = enabled;
+  }, [symbols, enabled]);
+
   const fetchQuotes = useCallback(async () => {
-    if (!enabled || symbols.length === 0) {
+    if (!enabledRef.current || symbolsRef.current.length === 0) {
       setIsLoading(false);
       return;
     }
@@ -38,7 +48,7 @@ export function useRealMarketData(options: UseRealMarketDataOptions): UseRealMar
       const quotesMap: Record<string, RealTimeQuote> = {};
 
       // Fetch quotes one by one to respect rate limits
-      for (const symbol of symbols) {
+      for (const symbol of symbolsRef.current) {
         try {
           const quote = await service.getQuote(symbol);
           quotesMap[symbol] = quote;
@@ -58,18 +68,19 @@ export function useRealMarketData(options: UseRealMarketDataOptions): UseRealMar
     } finally {
       setIsLoading(false);
     }
-  }, [symbols, enabled]);
+  }, []); // Empty dependencies - use refs instead
 
   const refresh = useCallback(async () => {
     await fetchQuotes();
   }, [fetchQuotes]);
 
-  // Initial fetch
+  // Initial fetch - only run once on mount
   useEffect(() => {
     if (enabled) {
       fetchQuotes();
     }
-  }, [enabled, fetchQuotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
   // Auto-refresh
   useEffect(() => {

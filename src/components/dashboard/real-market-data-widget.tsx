@@ -9,7 +9,7 @@ import { formatCurrency, formatPercentage } from '@/lib/utils';
 export function RealMarketDataWidget() {
   const { quotes, isLoading, error, refresh } = useRealMarketData({
     symbols: ['SPY', 'QQQ', 'DIA', 'IWM', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'BRK.B'],
-    refreshInterval: 60000, // Refresh every 60 seconds
+    refreshInterval: 300000, // Refresh every 5 minutes (300 seconds)
     enabled: true,
   });
 
