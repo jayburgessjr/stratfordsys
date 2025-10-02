@@ -3,7 +3,6 @@
 import { Suspense } from 'react';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { MarketOverview } from '@/components/dashboard/market-overview';
-import { RealMarketDataWidget } from '@/components/dashboard/real-market-data-widget';
 import { PortfolioQuickStats } from '@/components/dashboard/portfolio-quick-stats';
 import { DemoPerformanceOverview } from '@/components/dashboard/demo-performance-overview';
 import { AdditionalPortfolioStats } from '@/components/dashboard/additional-portfolio-stats';
@@ -25,11 +24,6 @@ export default function Dashboard() {
             Comprehensive wealth generation across stocks, crypto, lottery, gambling, and arbitrage opportunities
           </p>
         </div>
-
-        {/* Real Market Data - 3 Columns */}
-        <Suspense fallback={<LoadingSpinner />}>
-          <RealMarketDataWidget />
-        </Suspense>
 
         {/* Portfolio Stats - Row 1: 4 Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

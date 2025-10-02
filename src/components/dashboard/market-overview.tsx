@@ -148,6 +148,25 @@ export function MarketOverview() {
     }
   };
 
+  // Prepare stock symbols for Real Market Data cards
+  const realMarketIndices = useRealMarketData({
+    symbols: ['SPY', 'QQQ', 'DIA', 'IWM'],
+    refreshInterval: 300000,
+    enabled: true,
+  });
+
+  const realMarketStocks = useRealMarketData({
+    symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN'],
+    refreshInterval: 300000,
+    enabled: true,
+  });
+
+  const realMarketMore = useRealMarketData({
+    symbols: ['META', 'TSLA', 'NVDA', 'BRK.B'],
+    refreshInterval: 300000,
+    enabled: true,
+  });
+
   return (
     <div className="space-y-6">
       {/* Header with Refresh */}
@@ -157,6 +176,102 @@ export function MarketOverview() {
           <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
+      </div>
+
+      {/* Real Market Data - 3 Columns */}
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Real Market Data - Indices */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Real Market Data - Indices</CardTitle>
+            <CardDescription>Live prices from Alpha Vantage</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {realMarketIndices.isLoading && Object.keys(realMarketIndices.quotes).length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : (
+              Object.values(realMarketIndices.quotes).map((quote: any) => (
+                <div key={quote.symbol} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div>
+                    <div className="font-semibold">{quote.symbol}</div>
+                    <div className="text-sm text-muted-foreground">{formatCurrency(quote.price)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`flex items-center gap-1 ${quote.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {quote.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                      <span className="font-medium">{formatPercentage(quote.changePercent)}</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {quote.change >= 0 ? '+' : ''}{formatCurrency(quote.change)}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Real Market Data - Stocks */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Real Market Data - Stocks</CardTitle>
+            <CardDescription>Live prices from Alpha Vantage</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {realMarketStocks.isLoading && Object.keys(realMarketStocks.quotes).length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : (
+              Object.values(realMarketStocks.quotes).map((quote: any) => (
+                <div key={quote.symbol} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div>
+                    <div className="font-semibold">{quote.symbol}</div>
+                    <div className="text-sm text-muted-foreground">{formatCurrency(quote.price)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`flex items-center gap-1 ${quote.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {quote.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                      <span className="font-medium">{formatPercentage(quote.changePercent)}</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {quote.change >= 0 ? '+' : ''}{formatCurrency(quote.change)}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Real Market Data - More */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Real Market Data - More</CardTitle>
+            <CardDescription>Live prices from Alpha Vantage</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {realMarketMore.isLoading && Object.keys(realMarketMore.quotes).length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            ) : (
+              Object.values(realMarketMore.quotes).map((quote: any) => (
+                <div key={quote.symbol} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div>
+                    <div className="font-semibold">{quote.symbol}</div>
+                    <div className="text-sm text-muted-foreground">{formatCurrency(quote.price)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`flex items-center gap-1 ${quote.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {quote.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                      <span className="font-medium">{formatPercentage(quote.changePercent)}</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {quote.change >= 0 ? '+' : ''}{formatCurrency(quote.change)}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Market Data Grid */}
