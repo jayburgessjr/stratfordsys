@@ -31,9 +31,9 @@ export default function LotteryPage() {
   useEffect(() => {
     const analyzer = getLotteryAnalyzer();
     setHistoricalResults({
-      powerball: analyzer.getPowerballHistory(7),
-      megaMillions: analyzer.getMegaMillionsHistory(7),
-      calPick6: analyzer.getCalPick6History(7),
+      powerball: analyzer.getPowerballHistory(3),
+      megaMillions: analyzer.getMegaMillionsHistory(3),
+      calPick6: analyzer.getCalPick6History(3),
     });
   }, []);
 
@@ -189,7 +189,7 @@ export default function LotteryPage() {
                     <Calendar className="mr-2 h-5 w-5 text-purple-500" />
                     Powerball Results
                   </CardTitle>
-                  <CardDescription>Previous 7 drawings</CardDescription>
+                  <CardDescription>Last 3 official drawings</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {historicalResults.powerball.map((result, index) => (
@@ -217,7 +217,7 @@ export default function LotteryPage() {
                     <Calendar className="mr-2 h-5 w-5 text-yellow-500" />
                     Mega Millions Results
                   </CardTitle>
-                  <CardDescription>Previous 7 drawings</CardDescription>
+                  <CardDescription>Last 3 official drawings</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {historicalResults.megaMillions.map((result, index) => (
@@ -238,14 +238,14 @@ export default function LotteryPage() {
                 </CardContent>
               </Card>
 
-              {/* California Pick 6 History */}
+              {/* California SuperLotto Plus History */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Calendar className="mr-2 h-5 w-5 text-blue-500" />
-                    CA Pick 6 Results
+                    CA SuperLotto Plus
                   </CardTitle>
-                  <CardDescription>Previous 7 drawings</CardDescription>
+                  <CardDescription>Last 3 official drawings</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {historicalResults.calPick6.map((result, index) => (

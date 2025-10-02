@@ -46,36 +46,26 @@ class LotteryAnalyzer {
   }
 
   private initializeHistoricalData() {
-    // Sample Powerball historical data for analysis (most recent first)
+    // Real Powerball results from official lottery (most recent first)
     this.powerballHistory = [
-      { date: '2025-09-30', numbers: [14, 26, 38, 50, 69], bonus: 3 },
-      { date: '2025-09-27', numbers: [5, 21, 33, 47, 61], bonus: 11 },
-      { date: '2025-09-24', numbers: [8, 19, 32, 44, 58], bonus: 22 },
-      { date: '2025-09-21', numbers: [3, 17, 28, 41, 65], bonus: 15 },
-      { date: '2025-09-18', numbers: [12, 24, 36, 48, 52], bonus: 8 },
-      { date: '2025-09-15', numbers: [7, 16, 29, 43, 56], bonus: 19 },
-      { date: '2025-09-12', numbers: [11, 22, 35, 49, 63], bonus: 25 },
+      { date: '2025-09-27', numbers: [10, 16, 32, 61, 66], bonus: 4 },
+      { date: '2025-09-24', numbers: [15, 31, 45, 49, 53], bonus: 19 },
+      { date: '2025-09-22', numbers: [3, 29, 42, 46, 59], bonus: 15 },
     ];
 
+    // Real Mega Millions results from official lottery (most recent first)
     this.megaMillionsHistory = [
-      { date: '2025-09-30', numbers: [2, 19, 37, 48, 70], bonus: 21 },
-      { date: '2025-09-26', numbers: [9, 22, 34, 51, 66], bonus: 14 },
-      { date: '2025-09-23', numbers: [4, 16, 31, 45, 57], bonus: 8 },
-      { date: '2025-09-19', numbers: [11, 23, 35, 49, 64], bonus: 25 },
-      { date: '2025-09-16', numbers: [7, 18, 29, 42, 68], bonus: 19 },
-      { date: '2025-09-12', numbers: [5, 14, 27, 39, 62], bonus: 12 },
-      { date: '2025-09-09', numbers: [8, 20, 33, 46, 59], bonus: 17 },
+      { date: '2025-09-30', numbers: [4, 8, 27, 37, 63], bonus: 14 },
+      { date: '2025-09-26', numbers: [4, 21, 27, 33, 49], bonus: 21 },
+      { date: '2025-09-23', numbers: [13, 24, 41, 42, 70], bonus: 18 },
     ];
 
-    // California Pick 6 historical data (6 numbers from 1-49, bonus from same pool)
+    // Real California SuperLotto Plus results from official lottery (most recent first)
+    // SuperLotto Plus uses 5 numbers (1-47) + Mega number (1-27)
     this.calPick6History = [
-      { date: '2025-09-30', numbers: [3, 12, 21, 34, 42, 47], bonus: 15 },
-      { date: '2025-09-28', numbers: [7, 14, 23, 31, 39, 45], bonus: 28 },
-      { date: '2025-09-26', numbers: [5, 18, 26, 35, 41, 48], bonus: 9 },
-      { date: '2025-09-23', numbers: [2, 11, 19, 29, 38, 44], bonus: 33 },
-      { date: '2025-09-21', numbers: [8, 16, 24, 32, 40, 46], bonus: 13 },
-      { date: '2025-09-19', numbers: [4, 13, 22, 30, 37, 43], bonus: 27 },
-      { date: '2025-09-16', numbers: [6, 17, 25, 36, 41, 49], bonus: 10 },
+      { date: '2025-09-27', numbers: [6, 9, 10, 30, 40], bonus: 27 },
+      { date: '2025-09-24', numbers: [23, 26, 30, 39, 42], bonus: 13 },
+      { date: '2025-09-20', numbers: [7, 19, 20, 21, 23], bonus: 12 },
     ];
   }
 
@@ -319,21 +309,21 @@ class LotteryAnalyzer {
   /**
    * Get historical Powerball results
    */
-  public getPowerballHistory(count: number = 7): HistoricalData[] {
+  public getPowerballHistory(count: number = 3): HistoricalData[] {
     return this.powerballHistory.slice(0, count);
   }
 
   /**
    * Get historical Mega Millions results
    */
-  public getMegaMillionsHistory(count: number = 7): HistoricalData[] {
+  public getMegaMillionsHistory(count: number = 3): HistoricalData[] {
     return this.megaMillionsHistory.slice(0, count);
   }
 
   /**
-   * Get historical California Pick 6 results
+   * Get historical California SuperLotto Plus results
    */
-  public getCalPick6History(count: number = 7): HistoricalData[] {
+  public getCalPick6History(count: number = 3): HistoricalData[] {
     return this.calPick6History.slice(0, count);
   }
 }
