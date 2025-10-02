@@ -1,12 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Production build configuration
-  output: process.env.BUILD_STANDALONE ? 'standalone' : 'export',
+  // Use standalone for Vercel serverless functions
+  // or export for static builds
+  output: process.env.VERCEL ? undefined : (process.env.BUILD_STANDALONE ? 'standalone' : 'export'),
 
-  // Static export configuration for Netlify
-  ...(process.env.BUILD_STANDALONE ? {} : {
+  // Trailing slash for static exports only
+  ...(process.env.VERCEL ? {} : (process.env.BUILD_STANDALONE ? {} : {
     trailingSlash: true,
-  }),
+  })),
 
   // Enable SWC minification for better performance
   swcMinify: true,

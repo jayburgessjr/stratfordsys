@@ -147,32 +147,33 @@ class PortfolioTracker {
 
   /**
    * Sync portfolio from Robinhood (if configured)
+   * Uses API route for server-side Robinhood integration
    */
   async syncFromRobinhood(): Promise<boolean> {
-    // Skip on client side
-    if (!getRobinhoodService) {
-      return false;
-    }
-
     try {
-      const robinhood = getRobinhoodService();
+      console.log('Syncing portfolio from Robinhood via API...');
 
-      if (!robinhood.hasCredentials()) {
-        console.log('Robinhood credentials not configured, using demo data');
+      const response = await fetch('/api/portfolio/sync');
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.log('Robinhood sync failed:', data.error || data.message);
         return false;
       }
 
-      console.log('Syncing portfolio from Robinhood...');
-      const portfolio = await robinhood.getPortfolio();
+      if (!data.success || !data.positions) {
+        console.log('No Robinhood positions returned');
+        return false;
+      }
 
-      // Convert Robinhood positions to our Position format
-      this.positions = portfolio.positions.map(pos => ({
+      // Convert Robinhood API response to our Position format
+      this.positions = data.positions.map((pos: any) => ({
         symbol: pos.symbol,
-        name: pos.symbol, // We'll get the full name from market data
-        shares: pos.quantity,
-        costBasis: pos.averageBuyPrice,
-        purchaseDate: new Date().toISOString().split('T')[0], // Use today as placeholder
-        sector: undefined, // Will be enriched from market data
+        name: pos.symbol,
+        shares: pos.shares,
+        costBasis: pos.costBasis,
+        purchaseDate: new Date().toISOString().split('T')[0],
+        sector: undefined,
       }));
 
       console.log(`Successfully synced ${this.positions.length} positions from Robinhood`);
@@ -185,11 +186,10 @@ class PortfolioTracker {
 
   /**
    * Get portfolio summary with real-time data
-   * Attempts to sync from Robinhood first, falls back to demo data
+   * Attempts to sync from Robinhood first, falls back to manual or demo data
    */
-  async getPortfolioSummary(useRobinhood: boolean = false): Promise<PortfolioSummary> {
-    // Try to sync from Robinhood if enabled
-    // NOTE: Disabled by default for static export builds
+  async getPortfolioSummary(useRobinhood: boolean = true): Promise<PortfolioSummary> {
+    // Try to sync from Robinhood if enabled (now works with Vercel API routes)
     if (useRobinhood) {
       await this.syncFromRobinhood();
     }
