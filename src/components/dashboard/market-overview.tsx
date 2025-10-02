@@ -16,45 +16,76 @@ import {
   AlertTriangle,
   RefreshCw
 } from 'lucide-react';
+import { useRealMarketData } from '@/lib/hooks/use-real-market-data';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import { getNewsService, type NewsArticle } from '@/lib/services/news-service';
 
 interface MarketData {
   symbol: string;
   name: string;
-  price: string;
-  change: string;
-  changePercent: string;
+  price: number;
+  change: number;
+  changePercent: number;
   trend: 'up' | 'down';
   volume?: string;
   marketCap?: string;
 }
+
+// Symbol name mappings
+const symbolNames: Record<string, string> = {
+  'SPY': 'S&P 500',
+  'QQQ': 'NASDAQ',
+  'IWM': 'Russell 2000',
+  'VIX': 'Volatility Index',
+  'BTC-USD': 'Bitcoin',
+  'ETH-USD': 'Ethereum',
+  'SOL-USD': 'Solana',
+  'BNB-USD': 'BNB',
+  'NVDA': 'NVIDIA',
+  'TSLA': 'Tesla',
+  'AAPL': 'Apple',
+  'MSFT': 'Microsoft'
+};
 
 export function MarketOverview() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [marketNews, setMarketNews] = useState<NewsArticle[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
 
-  const marketIndices: MarketData[] = [
-    { symbol: 'SPY', name: 'S&P 500', price: '$428.67', change: '+$2.34', changePercent: '+0.55%', trend: 'up' },
-    { symbol: 'QQQ', name: 'NASDAQ', price: '$361.45', change: '-$1.23', changePercent: '-0.34%', trend: 'down' },
-    { symbol: 'IWM', name: 'Russell 2000', price: '$184.32', change: '+$0.89', changePercent: '+0.48%', trend: 'up' },
-    { symbol: 'VIX', name: 'Volatility Index', price: '$18.45', change: '-$0.67', changePercent: '-3.52%', trend: 'down' }
-  ];
+  // Fetch real market data
+  const indicesData = useRealMarketData({
+    symbols: ['SPY', 'QQQ', 'IWM', 'VIX'],
+    refreshInterval: 60000,
+    enabled: true,
+  });
 
-  const cryptoData: MarketData[] = [
-    { symbol: 'BTC', name: 'Bitcoin', price: '$38,247', change: '+$892', changePercent: '+2.39%', trend: 'up', marketCap: '$750B' },
-    { symbol: 'ETH', name: 'Ethereum', price: '$1,967', change: '-$23', changePercent: '-1.15%', trend: 'down', marketCap: '$236B' },
-    { symbol: 'SOL', name: 'Solana', price: '$76.43', change: '+$6.21', changePercent: '+8.84%', trend: 'up', marketCap: '$32B' },
-    { symbol: 'BNB', name: 'BNB', price: '$234.56', change: '+$3.45', changePercent: '+1.49%', trend: 'up', marketCap: '$36B' }
-  ];
+  const cryptoData = useRealMarketData({
+    symbols: ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD'],
+    refreshInterval: 60000,
+    enabled: true,
+  });
 
-  const topMovers: MarketData[] = [
-    { symbol: 'NVDA', name: 'NVIDIA', price: '$445.67', change: '+$23.45', changePercent: '+5.56%', trend: 'up' },
-    { symbol: 'TSLA', name: 'Tesla', price: '$189.34', change: '-$8.92', changePercent: '-4.50%', trend: 'down' },
-    { symbol: 'AAPL', name: 'Apple', price: '$178.90', change: '+$2.34', changePercent: '+1.33%', trend: 'up' },
-    { symbol: 'MSFT', name: 'Microsoft', price: '$367.89', change: '+$4.56', changePercent: '+1.26%', trend: 'up' }
-  ];
+  const topMoversData = useRealMarketData({
+    symbols: ['NVDA', 'TSLA', 'AAPL', 'MSFT'],
+    refreshInterval: 60000,
+    enabled: true,
+  });
+
+  // Convert quote data to MarketData format
+  const convertToMarketData = (quotes: Record<string, any>): MarketData[] => {
+    return Object.values(quotes).map((quote: any) => ({
+      symbol: quote.symbol.replace('-USD', ''),
+      name: symbolNames[quote.symbol] || quote.symbol,
+      price: quote.price,
+      change: quote.change,
+      changePercent: quote.changePercent,
+      trend: quote.change >= 0 ? 'up' : 'down'
+    }));
+  };
+
+  const marketIndices = convertToMarketData(indicesData.quotes);
+  const cryptoMarketData = convertToMarketData(cryptoData.quotes);
+  const topMovers = convertToMarketData(topMoversData.quotes);
 
   const lotteryNumbers = {
     powerball: { numbers: [7, 14, 21, 35, 42], powerball: 18, jackpot: '$150M' },
@@ -94,11 +125,17 @@ export function MarketOverview() {
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
+      // Refresh all market data
+      indicesData.refresh();
+      cryptoData.refresh();
+      topMoversData.refresh();
+
+      // Refresh news
       const newsService = getNewsService();
       const news = await newsService.getMarketNews(['blockchain', 'earnings', 'financial_markets'], 5);
       setMarketNews(news);
     } catch (error) {
-      console.error('Error refreshing news:', error);
+      console.error('Error refreshing data:', error);
     } finally {
       setIsRefreshing(false);
     }
@@ -184,27 +221,38 @@ export function MarketOverview() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {marketIndices.map((index) => (
-              <div key={index.symbol} className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{index.symbol}</div>
-                  <div className="text-sm text-muted-foreground">{index.name}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium">{index.price}</div>
-                  <div className={`text-sm flex items-center ${
-                    index.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {index.trend === 'up' ? (
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 mr-1" />
-                    )}
-                    {index.changePercent}
+            {indicesData.isLoading && marketIndices.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                Loading indices...
+              </div>
+            ) : marketIndices.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No data available
+              </div>
+            ) : (
+              marketIndices.map((index) => (
+                <div key={index.symbol} className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{index.symbol}</div>
+                    <div className="text-sm text-muted-foreground">{index.name}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">{formatCurrency(index.price)}</div>
+                    <div className={`text-sm flex items-center ${
+                      index.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {index.trend === 'up' ? (
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                      )}
+                      {formatPercentage(index.changePercent)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -217,27 +265,38 @@ export function MarketOverview() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {cryptoData.map((crypto) => (
-              <div key={crypto.symbol} className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{crypto.symbol}</div>
-                  <div className="text-sm text-muted-foreground">{crypto.name}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium">{crypto.price}</div>
-                  <div className={`text-sm flex items-center ${
-                    crypto.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {crypto.trend === 'up' ? (
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 mr-1" />
-                    )}
-                    {crypto.changePercent}
+            {cryptoData.isLoading && cryptoMarketData.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                Loading crypto...
+              </div>
+            ) : cryptoMarketData.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No data available
+              </div>
+            ) : (
+              cryptoMarketData.map((crypto) => (
+                <div key={crypto.symbol} className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{crypto.symbol}</div>
+                    <div className="text-sm text-muted-foreground">{crypto.name}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">{formatCurrency(crypto.price)}</div>
+                    <div className={`text-sm flex items-center ${
+                      crypto.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {crypto.trend === 'up' ? (
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                      )}
+                      {formatPercentage(crypto.changePercent)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -250,27 +309,38 @@ export function MarketOverview() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {topMovers.map((stock) => (
-              <div key={stock.symbol} className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{stock.symbol}</div>
-                  <div className="text-sm text-muted-foreground">{stock.name}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium">{stock.price}</div>
-                  <div className={`text-sm flex items-center ${
-                    stock.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {stock.trend === 'up' ? (
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3 mr-1" />
-                    )}
-                    {stock.changePercent}
+            {topMoversData.isLoading && topMovers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                Loading stocks...
+              </div>
+            ) : topMovers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No data available
+              </div>
+            ) : (
+              topMovers.map((stock) => (
+                <div key={stock.symbol} className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">{stock.symbol}</div>
+                    <div className="text-sm text-muted-foreground">{stock.name}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">{formatCurrency(stock.price)}</div>
+                    <div className={`text-sm flex items-center ${
+                      stock.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {stock.trend === 'up' ? (
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                      )}
+                      {formatPercentage(stock.changePercent)}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
