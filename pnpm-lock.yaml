@@ -59,6 +59,9 @@ dependencies:
   csv-parse:
     specifier: 5.4.0
     version: 5.4.0
+  etrade-ts:
+    specifier: ^1.1.1
+    version: 1.1.1
   ioredis:
     specifier: ^5.8.0
     version: 5.8.0
@@ -5268,6 +5271,14 @@ packages:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
 
+  /etrade-ts@1.1.1:
+    resolution: {integrity: sha512-jasgyislH4xc7stALKTFM8IwgNWwY9GC3pw96Gar86zSbDQj9I87PaVHOQ8H7yVbN2d07O0lKYnnxVNcQc1ikw==}
+    engines: {node: 16.x}
+    dependencies:
+      oauth: 0.9.15
+      typescript: 4.9.5
+    dev: false
+
   /eventemitter3@4.0.7:
     resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
     dev: false
@@ -9841,6 +9852,12 @@ packages:
     resolution: {integrity: sha512-1HTsf5/QVRmLzcGfldPFvkVsAdi1db1BBKzi7iW3KBUlOICg/nKnFS+jGqDJS3YD8VsWbAh7JiHeBvbsw8RPxA==}
     dependencies:
       ts-toolbelt: 9.6.0
+    dev: false
+
+  /typescript@4.9.5:
+    resolution: {integrity: sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==}
+    engines: {node: '>=4.2.0'}
+    hasBin: true
     dev: false
 
   /typescript@5.2.2:

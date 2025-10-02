@@ -146,8 +146,48 @@ class PortfolioTracker {
   }
 
   /**
+   * Sync portfolio from E*TRADE (if configured)
+   * Uses API route for server-side E*TRADE integration with OAuth
+   */
+  async syncFromETrade(): Promise<boolean> {
+    try {
+      console.log('Syncing portfolio from E*TRADE via API...');
+
+      const response = await fetch('/api/etrade/portfolio');
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.log('E*TRADE sync failed:', data.error || data.message);
+        return false;
+      }
+
+      if (!data.success || !data.positions) {
+        console.log('No E*TRADE positions returned');
+        return false;
+      }
+
+      // Convert E*TRADE API response to our Position format
+      this.positions = data.positions.map((pos: any) => ({
+        symbol: pos.symbol,
+        name: pos.name || pos.symbol,
+        shares: pos.shares,
+        costBasis: pos.costBasis,
+        purchaseDate: new Date().toISOString().split('T')[0],
+        sector: undefined,
+      }));
+
+      console.log(`Successfully synced ${this.positions.length} positions from E*TRADE`);
+      return true;
+    } catch (error) {
+      console.error('Failed to sync from E*TRADE:', error);
+      return false;
+    }
+  }
+
+  /**
    * Sync portfolio from Robinhood (if configured)
    * Uses API route for server-side Robinhood integration
+   * @deprecated Use syncFromETrade() for official API support
    */
   async syncFromRobinhood(): Promise<boolean> {
     try {
@@ -186,12 +226,23 @@ class PortfolioTracker {
 
   /**
    * Get portfolio summary with real-time data
-   * Attempts to sync from Robinhood first, falls back to manual or demo data
+   * Attempts to sync from E*TRADE first, falls back to Robinhood, then manual/demo data
    */
-  async getPortfolioSummary(useRobinhood: boolean = true): Promise<PortfolioSummary> {
-    // Try to sync from Robinhood if enabled (now works with Vercel API routes)
-    if (useRobinhood) {
-      await this.syncFromRobinhood();
+  async getPortfolioSummary(useBroker: boolean = true, preferETrade: boolean = true): Promise<PortfolioSummary> {
+    // Try to sync from broker if enabled (now works with Vercel API routes)
+    if (useBroker) {
+      // Try E*TRADE first (official API), fallback to Robinhood
+      if (preferETrade) {
+        const etradeSuccess = await this.syncFromETrade();
+        if (!etradeSuccess) {
+          await this.syncFromRobinhood();
+        }
+      } else {
+        const robinhoodSuccess = await this.syncFromRobinhood();
+        if (!robinhoodSuccess) {
+          await this.syncFromETrade();
+        }
+      }
     }
 
     const marketService = getRealMarketDataService();
