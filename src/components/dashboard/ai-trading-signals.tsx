@@ -9,6 +9,7 @@ import { getRealMarketDataService } from '@/lib/services/real-market-data';
 import { getLotteryAnalyzer } from '@/lib/services/lottery-analyzer';
 import { getSportsPredictor } from '@/lib/services/sports-predictor';
 import { getSportsDataService } from '@/lib/services/sports-data';
+import { getOpenAIService } from '@/lib/services/openai-service';
 
 interface Signal {
   asset: string;
@@ -35,31 +36,52 @@ export function AITradingSignals() {
 
   const loadSignals = async () => {
     try {
-      // Stock Signals from real market data
+      // Stock Signals from OpenAI + real market data
       const marketService = getRealMarketDataService();
+      const openAI = getOpenAIService();
       const stockSymbols = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA'];
       const stockData = await Promise.all(
         stockSymbols.map(symbol => marketService.getQuote(symbol))
       );
 
-      const stocks: Signal[] = stockData.map(quote => {
-        const action: 'BUY' | 'SELL' | 'HOLD' =
-          quote.changePercent > 2 ? 'BUY' :
-          quote.changePercent < -2 ? 'SELL' : 'HOLD';
-        const confidence = Math.min(95, 70 + Math.abs(quote.changePercent) * 5);
+      // Use OpenAI to analyze each stock (HIGH criticality with intelligent routing)
+      const stockSignalPromises = stockData.map(async (quote) => {
+        try {
+          const aiSignal = await openAI.analyzeStock(
+            quote.symbol,
+            quote.price,
+            quote.changePercent,
+            quote.volume || 0
+          );
 
-        return {
-          asset: quote.symbol,
-          action,
-          confidence: Math.round(confidence),
-          price: quote.price,
-          change: quote.changePercent,
-          reason: quote.changePercent > 0
-            ? `Strong upward momentum (+${quote.changePercent.toFixed(2)}%)`
-            : `Downward trend (${quote.changePercent.toFixed(2)}%)`,
-          timestamp: new Date(),
-        };
+          return {
+            asset: quote.symbol,
+            action: aiSignal.action,
+            confidence: aiSignal.confidence,
+            price: quote.price,
+            change: quote.changePercent,
+            reason: aiSignal.reasoning,
+            timestamp: new Date(),
+          };
+        } catch (error) {
+          console.error(`Error getting AI signal for ${quote.symbol}:`, error);
+          // Fallback to simple logic
+          const action: 'BUY' | 'SELL' | 'HOLD' =
+            quote.changePercent > 2 ? 'BUY' :
+            quote.changePercent < -2 ? 'SELL' : 'HOLD';
+          return {
+            asset: quote.symbol,
+            action,
+            confidence: 50,
+            price: quote.price,
+            change: quote.changePercent,
+            reason: `Price ${quote.changePercent >= 0 ? 'up' : 'down'} ${Math.abs(quote.changePercent).toFixed(2)}%`,
+            timestamp: new Date(),
+          };
+        }
       });
+
+      const stocks = await Promise.all(stockSignalPromises);
       setStockSignals(stocks);
 
       // Crypto Signals (using similar logic)

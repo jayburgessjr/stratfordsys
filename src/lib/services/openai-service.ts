@@ -47,9 +47,12 @@ export interface PortfolioAdvice {
   rebalancingNeeded: boolean;
 }
 
+export type TaskCriticality = 'high' | 'medium' | 'low';
+
 class OpenAIService {
   private client: OpenAI;
-  private model: string = 'gpt-4o-mini'; // Cost-effective model
+  private cache = new Map<string, { response: any; timestamp: number }>();
+  private readonly CACHE_TTL = 3600000; // 1 hour
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
@@ -65,7 +68,55 @@ class OpenAIService {
   }
 
   /**
+   * Intelligent model selection based on task criticality
+   * HIGH: Portfolio decisions, risk assessment → gpt-4o or gpt-4o-mini
+   * MEDIUM: Sports predictions, lottery analysis → gpt-4o-mini
+   * LOW: News summaries, simple lookups → gpt-3.5-turbo
+   */
+  private selectModel(
+    criticality: TaskCriticality,
+    needsStrictReasoning: boolean = false
+  ): string {
+    if (criticality === 'high') {
+      // Critical tasks: Use best model for complex reasoning
+      return needsStrictReasoning ? 'gpt-4o' : 'gpt-4o-mini';
+    } else if (criticality === 'medium') {
+      // Medium tasks: Fast and cost-effective
+      return 'gpt-4o-mini';
+    } else {
+      // Low criticality: Cheapest and fastest
+      return 'gpt-3.5-turbo';
+    }
+  }
+
+  /**
+   * Cache management for cost optimization
+   */
+  private getCacheKey(prompt: string, model: string): string {
+    const normalized = prompt.trim().toLowerCase().substring(0, 200);
+    return `${model}:${normalized}`;
+  }
+
+  private getCachedResponse(key: string): any | null {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached.response;
+    }
+    return null;
+  }
+
+  private setCachedResponse(key: string, response: any): void {
+    this.cache.set(key, { response, timestamp: Date.now() });
+    // Clean old cache entries
+    if (this.cache.size > 100) {
+      const oldestKey = Array.from(this.cache.keys())[0];
+      this.cache.delete(oldestKey);
+    }
+  }
+
+  /**
    * Analyze a stock and generate trading signal
+   * HIGH CRITICALITY - Uses gpt-4o-mini or gpt-4o for strict reasoning
    */
   async analyzeStock(
     symbol: string,
@@ -95,8 +146,18 @@ Provide a trading recommendation in this EXACT JSON format:
 
 Be specific, data-driven, and include risk management.`;
 
+      // Check cache first
+      const cacheKey = this.getCacheKey(prompt, 'stock');
+      const cached = this.getCachedResponse(cacheKey);
+      if (cached) {
+        return { ...cached, symbol };
+      }
+
+      // HIGH criticality - use best model
+      const model = this.selectModel('high', Math.abs(change) > 5); // Strict reasoning if big move
+
       const response = await this.client.chat.completions.create({
-        model: this.model,
+        model,
         messages: [
           {
             role: 'system',
@@ -118,7 +179,7 @@ Be specific, data-driven, and include risk management.`;
 
       const parsed = JSON.parse(content);
 
-      return {
+      const result = {
         symbol,
         action: parsed.action,
         confidence: parsed.confidence,
@@ -127,6 +188,11 @@ Be specific, data-driven, and include risk management.`;
         stopLoss: parsed.stopLoss,
         timeframe: parsed.timeframe
       };
+
+      // Cache the result
+      this.setCachedResponse(cacheKey, result);
+
+      return result;
     } catch (error) {
       console.error('Error analyzing stock:', error);
       throw error;
@@ -196,6 +262,7 @@ Provide a complete strategy in this EXACT JSON format:
 
   /**
    * Analyze market sentiment from news/data
+   * MEDIUM CRITICALITY - Uses gpt-4o-mini for market analysis
    */
   async analyzeMarketSentiment(
     marketData: string,
@@ -217,8 +284,11 @@ Provide analysis in this EXACT JSON format:
   "opportunities": ["opportunity 1", "opportunity 2", ...]
 }`;
 
+      // MEDIUM criticality - market analysis
+      const model = this.selectModel('medium');
+
       const response = await this.client.chat.completions.create({
-        model: this.model,
+        model,
         messages: [
           {
             role: 'system',
@@ -247,6 +317,7 @@ Provide analysis in this EXACT JSON format:
 
   /**
    * Analyze portfolio and provide recommendations
+   * HIGH CRITICALITY - Uses gpt-4o for strict reasoning on portfolio decisions
    */
   async analyzePortfolio(
     positions: Array<{symbol: string; shares: number; avgCost: number; currentPrice: number}>,
@@ -277,8 +348,11 @@ Provide advice in this EXACT JSON format:
 
 Focus on: diversification, risk concentration, sector allocation, position sizing.`;
 
+      // HIGH criticality - always use best reasoning for portfolio decisions
+      const model = this.selectModel('high', true);
+
       const response = await this.client.chat.completions.create({
-        model: this.model,
+        model,
         messages: [
           {
             role: 'system',
@@ -307,6 +381,7 @@ Focus on: diversification, risk concentration, sector allocation, position sizin
 
   /**
    * General AI chat for questions
+   * LOW CRITICALITY - Uses gpt-3.5-turbo for general chat
    */
   async chat(userMessage: string, context?: string): Promise<string> {
     try {
@@ -321,8 +396,11 @@ Focus on: diversification, risk concentration, sector allocation, position sizin
         }
       ];
 
+      // LOW criticality - use cheapest model for general chat
+      const model = this.selectModel('low');
+
       const response = await this.client.chat.completions.create({
-        model: this.model,
+        model,
         messages,
         temperature: 0.7,
         max_tokens: 500
