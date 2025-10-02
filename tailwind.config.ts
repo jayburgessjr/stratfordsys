@@ -50,6 +50,41 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Modern gradient colors inspired by Admindek
+        gradient: {
+          blue: {
+            from: '#4099ff',
+            to: '#73b4ff'
+          },
+          purple: {
+            from: '#9368e9',
+            to: '#ab8ce4'
+          },
+          green: {
+            from: '#2ed8b6',
+            to: '#59e0c5'
+          },
+          orange: {
+            from: '#FFB64D',
+            to: '#ffcb80'
+          },
+          red: {
+            from: '#FF5370',
+            to: '#ff869a'
+          },
+          teal: {
+            from: '#00bcd4',
+            to: '#26c6da'
+          }
+        }
+      },
+      backgroundImage: {
+        'gradient-blue': 'linear-gradient(135deg, #4099ff 0%, #73b4ff 100%)',
+        'gradient-purple': 'linear-gradient(135deg, #9368e9 0%, #ab8ce4 100%)',
+        'gradient-green': 'linear-gradient(135deg, #2ed8b6 0%, #59e0c5 100%)',
+        'gradient-orange': 'linear-gradient(135deg, #FFB64D 0%, #ffcb80 100%)',
+        'gradient-red': 'linear-gradient(135deg, #FF5370 0%, #ff869a 100%)',
+        'gradient-teal': 'linear-gradient(135deg, #00bcd4 0%, #26c6da 100%)',
       },
       borderRadius: {
         lg: "var(--radius)",
