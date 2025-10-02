@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -11,20 +11,29 @@ interface DashboardLayoutProps {
   className?: string;
 }
 
+const navItems = [
+  { href: '/', label: 'Dashboard', icon: BarChart3, description: 'Financial Overview' },
+  { href: '/trading/', label: 'Stocks', icon: TrendingUp, description: 'Stock Trading' },
+  { href: '/crypto/', label: 'Crypto', icon: Bitcoin, description: 'Cryptocurrency' },
+  { href: '/lottery/', label: 'Lottery', icon: Target, description: 'Number Analytics' },
+  { href: '/gambling/', label: 'Gambling', icon: Dice1, description: 'Sports & Casino' },
+  { href: '/portfolio/', label: 'Portfolio', icon: Database, description: 'Asset Management' },
+  { href: '/agents/', label: 'Agents', icon: Zap, description: 'AI Management' },
+  { href: '/security/', label: 'Security', icon: Shield, description: 'Risk & Compliance' },
+  { href: '/settings/', label: 'Settings', icon: Settings, description: 'System Configuration' },
+];
+
 export function DashboardLayout({ children, className }: DashboardLayoutProps) {
   const pathname = usePathname();
 
-  const navItems = [
-    { href: '/', label: 'Dashboard', icon: BarChart3, description: 'Financial Overview' },
-    { href: '/trading/', label: 'Stocks', icon: TrendingUp, description: 'Stock Trading' },
-    { href: '/crypto/', label: 'Crypto', icon: Bitcoin, description: 'Cryptocurrency' },
-    { href: '/lottery/', label: 'Lottery', icon: Target, description: 'Number Analytics' },
-    { href: '/gambling/', label: 'Gambling', icon: Dice1, description: 'Sports & Casino' },
-    { href: '/portfolio/', label: 'Portfolio', icon: Database, description: 'Asset Management' },
-    { href: '/agents/', label: 'Agents', icon: Zap, description: 'AI Management' },
-    { href: '/security/', label: 'Security', icon: Shield, description: 'Risk & Compliance' },
-    { href: '/settings/', label: 'Settings', icon: Settings, description: 'System Configuration' },
-  ];
+  // Memoize current page to prevent re-renders
+  const currentPage = useMemo(() => {
+    const normalizedPathname = pathname === '/' ? '/' : pathname.endsWith('/') ? pathname : pathname + '/';
+    return navItems.find(item => {
+      const normalizedHref = item.href.endsWith('/') ? item.href : item.href + '/';
+      return normalizedPathname === normalizedHref || (item.href === '/' && pathname === '/');
+    }) || navItems[0];
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -100,24 +109,10 @@ export function DashboardLayout({ children, className }: DashboardLayoutProps) {
         <header className="sticky top-0 z-30 h-16 bg-white border-b shadow-sm flex items-center px-6">
           <div className="flex-1">
             <h1 className="text-xl font-semibold text-foreground">
-              {(() => {
-                const normalizedPathname = pathname.endsWith('/') ? pathname : pathname + '/';
-                const item = navItems.find(item => {
-                  const normalizedHref = item.href.endsWith('/') ? item.href : item.href + '/';
-                  return normalizedPathname === normalizedHref || (item.href === '/' && pathname === '/');
-                });
-                return item?.label || 'Dashboard';
-              })()}
+              {currentPage.label}
             </h1>
             <p className="text-xs text-muted-foreground">
-              {(() => {
-                const normalizedPathname = pathname.endsWith('/') ? pathname : pathname + '/';
-                const item = navItems.find(item => {
-                  const normalizedHref = item.href.endsWith('/') ? item.href : item.href + '/';
-                  return normalizedPathname === normalizedHref || (item.href === '/' && pathname === '/');
-                });
-                return item?.description || 'Financial Overview';
-              })()}
+              {currentPage.description}
             </p>
           </div>
         </header>
