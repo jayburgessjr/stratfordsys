@@ -16,14 +16,14 @@ export function DashboardLayout({ children, className }: DashboardLayoutProps) {
 
   const navItems = [
     { href: '/', label: 'Dashboard', icon: BarChart3, description: 'Financial Overview' },
-    { href: '/trading', label: 'Stocks', icon: TrendingUp, description: 'Stock Trading' },
-    { href: '/crypto', label: 'Crypto', icon: Bitcoin, description: 'Cryptocurrency' },
-    { href: '/lottery', label: 'Lottery', icon: Target, description: 'Number Analytics' },
-    { href: '/gambling', label: 'Gambling', icon: Dice1, description: 'Sports & Casino' },
-    { href: '/portfolio', label: 'Portfolio', icon: Database, description: 'Asset Management' },
-    { href: '/agents', label: 'Agents', icon: Zap, description: 'AI Management' },
-    { href: '/security', label: 'Security', icon: Shield, description: 'Risk & Compliance' },
-    { href: '/settings', label: 'Settings', icon: Settings, description: 'System Configuration' },
+    { href: '/trading/', label: 'Stocks', icon: TrendingUp, description: 'Stock Trading' },
+    { href: '/crypto/', label: 'Crypto', icon: Bitcoin, description: 'Cryptocurrency' },
+    { href: '/lottery/', label: 'Lottery', icon: Target, description: 'Number Analytics' },
+    { href: '/gambling/', label: 'Gambling', icon: Dice1, description: 'Sports & Casino' },
+    { href: '/portfolio/', label: 'Portfolio', icon: Database, description: 'Asset Management' },
+    { href: '/agents/', label: 'Agents', icon: Zap, description: 'AI Management' },
+    { href: '/security/', label: 'Security', icon: Shield, description: 'Risk & Compliance' },
+    { href: '/settings/', label: 'Settings', icon: Settings, description: 'System Configuration' },
   ];
 
   return (
@@ -50,7 +50,11 @@ export function DashboardLayout({ children, className }: DashboardLayoutProps) {
           <div className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              // Normalize both paths for comparison (handle trailing slashes)
+              const normalizedPathname = pathname.endsWith('/') ? pathname : pathname + '/';
+              const normalizedHref = item.href.endsWith('/') ? item.href : item.href + '/';
+              const isActive = normalizedPathname === normalizedHref ||
+                               (item.href === '/' && pathname === '/');
               return (
                 <Link key={item.href} href={item.href}>
                   <div
@@ -96,10 +100,24 @@ export function DashboardLayout({ children, className }: DashboardLayoutProps) {
         <header className="sticky top-0 z-30 h-16 bg-white border-b shadow-sm flex items-center px-6">
           <div className="flex-1">
             <h1 className="text-xl font-semibold text-foreground">
-              {navItems.find(item => item.href === pathname)?.label || 'Dashboard'}
+              {(() => {
+                const normalizedPathname = pathname.endsWith('/') ? pathname : pathname + '/';
+                const item = navItems.find(item => {
+                  const normalizedHref = item.href.endsWith('/') ? item.href : item.href + '/';
+                  return normalizedPathname === normalizedHref || (item.href === '/' && pathname === '/');
+                });
+                return item?.label || 'Dashboard';
+              })()}
             </h1>
             <p className="text-xs text-muted-foreground">
-              {navItems.find(item => item.href === pathname)?.description || 'Financial Overview'}
+              {(() => {
+                const normalizedPathname = pathname.endsWith('/') ? pathname : pathname + '/';
+                const item = navItems.find(item => {
+                  const normalizedHref = item.href.endsWith('/') ? item.href : item.href + '/';
+                  return normalizedPathname === normalizedHref || (item.href === '/' && pathname === '/');
+                });
+                return item?.description || 'Financial Overview';
+              })()}
             </p>
           </div>
         </header>
