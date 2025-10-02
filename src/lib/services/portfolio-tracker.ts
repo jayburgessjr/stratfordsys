@@ -5,7 +5,17 @@
  */
 
 import { getRealMarketDataService, type RealTimeQuote } from './real-market-data';
-import { getRobinhoodService, type RobinhoodPortfolio } from './robinhood-service';
+
+// Conditionally import Robinhood only on server side
+let getRobinhoodService: any;
+if (typeof window === 'undefined') {
+  try {
+    const rhModule = require('./robinhood-service');
+    getRobinhoodService = rhModule.getRobinhoodService;
+  } catch (error) {
+    console.log('Robinhood module not available (client-side)');
+  }
+}
 
 export interface Position {
   symbol: string;
@@ -116,6 +126,11 @@ class PortfolioTracker {
    * Sync portfolio from Robinhood (if configured)
    */
   async syncFromRobinhood(): Promise<boolean> {
+    // Skip on client side
+    if (!getRobinhoodService) {
+      return false;
+    }
+
     try {
       const robinhood = getRobinhoodService();
 

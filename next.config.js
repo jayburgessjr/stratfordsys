@@ -106,17 +106,34 @@ const nextConfig = {
     BUILD_TIME: new Date().toISOString(),
   },
 
-  // Bundle analyzer (enabled with ANALYZE=true)
-  ...(process.env.ANALYZE === 'true' && {
-    webpack: (config) => {
+  // Webpack configuration
+  webpack: (config, { isServer }) => {
+    // Exclude Node.js modules from client bundle
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        net: false,
+        tls: false,
+        fs: false,
+        http: false,
+        https: false,
+        stream: false,
+        crypto: false,
+        child_process: false,
+      };
+    }
+
+    // Bundle analyzer (enabled with ANALYZE=true)
+    if (process.env.ANALYZE === 'true') {
       config.plugins.push(
         new (require('@next/bundle-analyzer'))({
           enabled: true,
         })
       );
-      return config;
-    },
-  }),
+    }
+
+    return config;
+  },
 }
 
 module.exports = nextConfig
