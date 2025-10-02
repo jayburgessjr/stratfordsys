@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { MarketOverview } from '@/components/dashboard/market-overview';
 import { RealMarketDataWidget } from '@/components/dashboard/real-market-data-widget';
+import { PortfolioQuickStats } from '@/components/dashboard/portfolio-quick-stats';
 import { DemoPerformanceOverview } from '@/components/dashboard/demo-performance-overview';
 import { DemoEquityCurveChart } from '@/components/dashboard/demo-equity-curve-chart';
 import { DemoTradingActivity } from '@/components/dashboard/demo-trading-activity';
@@ -25,19 +26,31 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Real Market Data (Live from Alpha Vantage) */}
+        {/* Two Column Layout: Market Data (Left) + Portfolio Stats (Right) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Real Market Data (2/3 width) */}
+          <div className="lg:col-span-2 space-y-6">
+            <Suspense fallback={<LoadingSpinner />}>
+              <RealMarketDataWidget />
+            </Suspense>
+          </div>
+
+          {/* Right Column - Portfolio Quick Stats (1/3 width) */}
+          <div className="lg:col-span-1">
+            <Suspense fallback={<LoadingSpinner />}>
+              <PortfolioQuickStats />
+            </Suspense>
+          </div>
+        </div>
+
+        {/* Performance Overview Cards */}
         <Suspense fallback={<LoadingSpinner />}>
-          <RealMarketDataWidget />
+          <DemoPerformanceOverview />
         </Suspense>
 
         {/* Real-time Market Overview */}
         <Suspense fallback={<LoadingSpinner />}>
           <MarketOverview />
-        </Suspense>
-
-        {/* Performance Overview Cards */}
-        <Suspense fallback={<LoadingSpinner />}>
-          <DemoPerformanceOverview />
         </Suspense>
 
         {/* Main Charts Section */}
