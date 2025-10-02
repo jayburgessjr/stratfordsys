@@ -8,13 +8,13 @@ import { formatCurrency, formatPercentage } from '@/lib/utils';
 
 export function RealMarketDataWidget() {
   const { quotes, isLoading, error, refresh } = useRealMarketData({
-    symbols: ['SPY', 'QQQ', 'AAPL', 'MSFT'],
+    symbols: ['SPY', 'QQQ', 'DIA', 'IWM', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NVDA', 'BRK.B'],
     refreshInterval: 60000, // Refresh every 60 seconds
     enabled: true,
   });
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -34,7 +34,7 @@ export function RealMarketDataWidget() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="h-[calc(100%-5rem)] overflow-y-auto">
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 text-sm">
             {error}

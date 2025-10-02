@@ -27,9 +27,9 @@ export default function Dashboard() {
         </div>
 
         {/* Two Column Layout: Market Data (Left) + Portfolio Stats (Right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Left Column - Real Market Data (2/3 width) */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2">
             <Suspense fallback={<LoadingSpinner />}>
               <RealMarketDataWidget />
             </Suspense>
