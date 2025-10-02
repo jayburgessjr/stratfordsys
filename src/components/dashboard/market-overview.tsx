@@ -19,6 +19,7 @@ import {
 import { useRealMarketData } from '@/lib/hooks/use-real-market-data';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import { getNewsService, type NewsArticle } from '@/lib/services/news-service';
+import { getLotteryAnalyzer, type LotteryPrediction } from '@/lib/services/lottery-analyzer';
 
 interface MarketData {
   symbol: string;
@@ -51,6 +52,10 @@ export function MarketOverview() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [marketNews, setMarketNews] = useState<NewsArticle[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
+  const [lotteryPredictions, setLotteryPredictions] = useState<{
+    powerball: LotteryPrediction | null;
+    megaMillions: LotteryPrediction | null;
+  }>({ powerball: null, megaMillions: null });
 
   // Fetch real market data
   const indicesData = useRealMarketData({
@@ -87,11 +92,13 @@ export function MarketOverview() {
   const cryptoMarketData = convertToMarketData(cryptoData.quotes);
   const topMovers = convertToMarketData(topMoversData.quotes);
 
-  const lotteryNumbers = {
-    powerball: { numbers: [7, 14, 21, 35, 42], powerball: 18, jackpot: '$150M' },
-    megaMillions: { numbers: [3, 19, 28, 41, 67], megaBall: 23, jackpot: '$87M' },
-    confidence: 89
-  };
+  // Generate lottery predictions on component mount
+  useEffect(() => {
+    const analyzer = getLotteryAnalyzer();
+    const powerball = analyzer.generatePowerballPrediction();
+    const megaMillions = analyzer.generateMegaMillionsPrediction();
+    setLotteryPredictions({ powerball, megaMillions });
+  }, []);
 
   const aiInsights = [
     { type: 'BUY', asset: 'BTC', confidence: 94, reason: 'Golden cross formation + institutional accumulation' },
@@ -443,41 +450,79 @@ export function MarketOverview() {
             <CardDescription>AI-generated number combinations</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">Powerball</span>
-                <Badge variant="outline">{lotteryNumbers.confidence}% Confidence</Badge>
-              </div>
-              <div className="flex space-x-2 mb-2">
-                {lotteryNumbers.powerball.numbers.map((num, i) => (
-                  <div key={i} className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
-                    {num}
+            {lotteryPredictions.powerball && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">Powerball</span>
+                  <Badge variant="outline">{lotteryPredictions.powerball.confidence}% Confidence</Badge>
+                </div>
+                <div className="flex space-x-2 mb-2">
+                  {lotteryPredictions.powerball.numbers.map((num, i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                      {num}
+                    </div>
+                  ))}
+                  <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold">
+                    {lotteryPredictions.powerball.powerball}
                   </div>
-                ))}
-                <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold">
-                  {lotteryNumbers.powerball.powerball}
+                </div>
+                <div className="text-sm text-green-600 font-medium mb-2">Jackpot: {lotteryPredictions.powerball.jackpot}</div>
+                <div className="text-xs text-muted-foreground mb-2">
+                  <span className="font-semibold">Strategy:</span> {lotteryPredictions.powerball.strategy}
+                </div>
+                <div className="text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Odd/Even:</span>
+                    <span className="font-medium">{lotteryPredictions.powerball.analysis.oddEvenRatio}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">High/Low:</span>
+                    <span className="font-medium">{lotteryPredictions.powerball.analysis.highLowRatio}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sum Range:</span>
+                    <span className="font-medium">{lotteryPredictions.powerball.analysis.sumRange} ({lotteryPredictions.powerball.analysis.sumTotal})</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-sm text-green-600 font-medium">Jackpot: {lotteryNumbers.powerball.jackpot}</div>
-            </div>
+            )}
             <div className="border-b"></div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">Mega Millions</span>
-                <Badge variant="outline">{lotteryNumbers.confidence - 5}% Confidence</Badge>
-              </div>
-              <div className="flex space-x-2 mb-2">
-                {lotteryNumbers.megaMillions.numbers.map((num, i) => (
-                  <div key={i} className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
-                    {num}
+            {lotteryPredictions.megaMillions && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">Mega Millions</span>
+                  <Badge variant="outline">{lotteryPredictions.megaMillions.confidence}% Confidence</Badge>
+                </div>
+                <div className="flex space-x-2 mb-2">
+                  {lotteryPredictions.megaMillions.numbers.map((num, i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                      {num}
+                    </div>
+                  ))}
+                  <div className="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-sm font-bold">
+                    {lotteryPredictions.megaMillions.megaBall}
                   </div>
-                ))}
-                <div className="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-sm font-bold">
-                  {lotteryNumbers.megaMillions.megaBall}
+                </div>
+                <div className="text-sm text-green-600 font-medium mb-2">Jackpot: {lotteryPredictions.megaMillions.jackpot}</div>
+                <div className="text-xs text-muted-foreground mb-2">
+                  <span className="font-semibold">Strategy:</span> {lotteryPredictions.megaMillions.strategy}
+                </div>
+                <div className="text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Odd/Even:</span>
+                    <span className="font-medium">{lotteryPredictions.megaMillions.analysis.oddEvenRatio}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">High/Low:</span>
+                    <span className="font-medium">{lotteryPredictions.megaMillions.analysis.highLowRatio}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sum Range:</span>
+                    <span className="font-medium">{lotteryPredictions.megaMillions.analysis.sumRange} ({lotteryPredictions.megaMillions.analysis.sumTotal})</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-sm text-green-600 font-medium">Jackpot: {lotteryNumbers.megaMillions.jackpot}</div>
-            </div>
+            )}
           </CardContent>
         </Card>
 

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { AILotteryAnalyzer } from '@/components/ai/ai-lottery-analyzer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Target, TrendingUp, Zap, RefreshCw } from 'lucide-react';
+import { Target, TrendingUp, Zap, RefreshCw, Calendar } from 'lucide-react';
+import { getLotteryAnalyzer, type HistoricalData } from '@/lib/services/lottery-analyzer';
 
 interface LotteryNumbers {
   main: number[];
@@ -20,6 +21,21 @@ interface LotteryNumbers {
 export default function LotteryPage() {
   const [generatedNumbers, setGeneratedNumbers] = useState<LotteryNumbers[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [historicalResults, setHistoricalResults] = useState<{
+    powerball: HistoricalData[];
+    megaMillions: HistoricalData[];
+    calPick6: HistoricalData[];
+  }>({ powerball: [], megaMillions: [], calPick6: [] });
+
+  // Load historical results on mount
+  useEffect(() => {
+    const analyzer = getLotteryAnalyzer();
+    setHistoricalResults({
+      powerball: analyzer.getPowerballHistory(7),
+      megaMillions: analyzer.getMegaMillionsHistory(7),
+      calPick6: analyzer.getCalPick6History(7),
+    });
+  }, []);
 
   // Deterministic number generation using seeded randomness
   const generateNumbers = (lotteryType: string) => {
@@ -156,12 +172,101 @@ export default function LotteryPage() {
         {/* AI Lottery Analyzer */}
         <AILotteryAnalyzer />
 
-        <Tabs defaultValue="generator" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="history" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="history">Previous Results</TabsTrigger>
             <TabsTrigger value="generator">Number Generator</TabsTrigger>
             <TabsTrigger value="strategies">Strategies</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="history" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-3">
+              {/* Powerball History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Calendar className="mr-2 h-5 w-5 text-purple-500" />
+                    Powerball Results
+                  </CardTitle>
+                  <CardDescription>Previous 7 drawings</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {historicalResults.powerball.map((result, index) => (
+                    <div key={index} className="p-3 border rounded-lg space-y-2">
+                      <div className="text-xs text-muted-foreground">{result.date}</div>
+                      <div className="flex space-x-1.5">
+                        {result.numbers.map((num, i) => (
+                          <div key={i} className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                            {num}
+                          </div>
+                        ))}
+                        <div className="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold">
+                          {result.bonus}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Mega Millions History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Calendar className="mr-2 h-5 w-5 text-yellow-500" />
+                    Mega Millions Results
+                  </CardTitle>
+                  <CardDescription>Previous 7 drawings</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {historicalResults.megaMillions.map((result, index) => (
+                    <div key={index} className="p-3 border rounded-lg space-y-2">
+                      <div className="text-xs text-muted-foreground">{result.date}</div>
+                      <div className="flex space-x-1.5">
+                        {result.numbers.map((num, i) => (
+                          <div key={i} className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                            {num}
+                          </div>
+                        ))}
+                        <div className="w-7 h-7 rounded-full bg-yellow-500 text-white flex items-center justify-center text-xs font-bold">
+                          {result.bonus}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* California Pick 6 History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Calendar className="mr-2 h-5 w-5 text-blue-500" />
+                    CA Pick 6 Results
+                  </CardTitle>
+                  <CardDescription>Previous 7 drawings</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {historicalResults.calPick6.map((result, index) => (
+                    <div key={index} className="p-3 border rounded-lg space-y-2">
+                      <div className="text-xs text-muted-foreground">{result.date}</div>
+                      <div className="flex space-x-1.5">
+                        {result.numbers.map((num, i) => (
+                          <div key={i} className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                            {num}
+                          </div>
+                        ))}
+                        <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">
+                          {result.bonus}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           <TabsContent value="generator" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-3">
