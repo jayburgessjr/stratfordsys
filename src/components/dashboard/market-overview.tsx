@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useMarketData, useTradingSignals, useNewsAlerts } from '@/lib/hooks/use-market-data';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
+import { getNewsService, type NewsArticle } from '@/lib/services/news-service';
 
 interface MarketData {
   symbol: string;
@@ -32,17 +33,11 @@ interface MarketData {
   marketCap?: string;
 }
 
-interface NewsItem {
-  title: string;
-  source: string;
-  time: string;
-  impact: 'high' | 'medium' | 'low';
-  sentiment: 'bullish' | 'bearish' | 'neutral';
-}
-
 export function MarketOverview() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [marketNews, setMarketNews] = useState<NewsArticle[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
 
   // Real-time data hooks
   const marketData = useMarketData({
@@ -88,12 +83,27 @@ export function MarketOverview() {
     { type: 'LOTTERY', asset: 'Powerball', confidence: 73, reason: 'Hot number pattern detected' }
   ];
 
-  const marketNews: NewsItem[] = [
-    { title: 'Fed Signals Pause in Rate Hikes', source: 'Bloomberg', time: '5m ago', impact: 'high', sentiment: 'bullish' },
-    { title: 'Bitcoin ETF Approval Expected', source: 'CoinDesk', time: '12m ago', impact: 'high', sentiment: 'bullish' },
-    { title: 'NVIDIA Beats Earnings Expectations', source: 'Reuters', time: '1h ago', impact: 'medium', sentiment: 'bullish' },
-    { title: 'Oil Prices Surge on Supply Concerns', source: 'MarketWatch', time: '2h ago', impact: 'medium', sentiment: 'neutral' }
-  ];
+  // Fetch real news on component mount
+  useEffect(() => {
+    const fetchNews = async () => {
+      setNewsLoading(true);
+      try {
+        const newsService = getNewsService();
+        const news = await newsService.getMarketNews(['blockchain', 'earnings', 'financial_markets'], 5);
+        setMarketNews(news);
+      } catch (error) {
+        console.error('Error fetching news:', error);
+      } finally {
+        setNewsLoading(false);
+      }
+    };
+
+    fetchNews();
+
+    // Refresh news every 5 minutes
+    const interval = setInterval(fetchNews, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const refreshData = () => {
     setIsRefreshing(true);
@@ -360,36 +370,63 @@ export function MarketOverview() {
         {/* Market News */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Activity className="mr-2 h-5 w-5 text-orange-500" />
-              Market News
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Activity className="mr-2 h-5 w-5 text-orange-500" />
+                Market News
+              </div>
+              {newsLoading && <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />}
             </CardTitle>
-            <CardDescription>Real-time market-moving news</CardDescription>
+            <CardDescription>Real-time market-moving news with AI sentiment analysis</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {marketNews.map((news, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="font-medium text-sm leading-tight">{news.title}</div>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="text-xs text-muted-foreground">{news.source}</span>
-                      <span className="text-xs text-muted-foreground">•</span>
-                      <span className="text-xs text-muted-foreground">{news.time}</span>
+            {newsLoading && marketNews.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+                Loading real news...
+              </div>
+            ) : marketNews.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No news available
+              </div>
+            ) : (
+              marketNews.map((news, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <a
+                        href={news.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-sm leading-tight hover:text-primary transition-colors"
+                      >
+                        {news.title}
+                      </a>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className="text-xs text-muted-foreground">{news.source}</span>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs text-muted-foreground">{news.timeAgo}</span>
+                        {news.ticker && (
+                          <>
+                            <span className="text-xs text-muted-foreground">•</span>
+                            <Badge variant="outline" className="text-xs">{news.ticker}</Badge>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex space-x-1 ml-2">
+                      <Badge variant={news.impact === 'high' ? 'destructive' : news.impact === 'medium' ? 'secondary' : 'outline'} className="text-xs">
+                        {news.impact}
+                      </Badge>
+                      <Badge variant={news.sentiment === 'bullish' ? 'default' : news.sentiment === 'bearish' ? 'destructive' : 'outline'} className="text-xs">
+                        {news.sentiment}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex space-x-1 ml-2">
-                    <Badge variant={news.impact === 'high' ? 'destructive' : news.impact === 'medium' ? 'secondary' : 'outline'} className="text-xs">
-                      {news.impact}
-                    </Badge>
-                    <Badge variant={news.sentiment === 'bullish' ? 'default' : news.sentiment === 'bearish' ? 'destructive' : 'outline'} className="text-xs">
-                      {news.sentiment}
-                    </Badge>
-                  </div>
+                  {index < marketNews.length - 1 && <div className="border-b"></div>}
                 </div>
-                {index < marketNews.length - 1 && <div className="border-b"></div>}
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
