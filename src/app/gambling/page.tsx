@@ -1,16 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Dice1, TrendingUp, Target, Zap, DollarSign, Trophy } from 'lucide-react';
+import { Dice1, TrendingUp, Target, Zap, DollarSign, Trophy, Activity, Calendar } from 'lucide-react';
+import { getSportsDataService, type Game } from '@/lib/services/sports-data';
+import { getSportsPredictor, type Prediction } from '@/lib/services/sports-predictor';
 
 export default function GamblingPage() {
   const [_selectedStrategy, setSelectedStrategy] = useState<string>('');
+  const [liveGames, setLiveGames] = useState<Game[]>([]);
+  const [todayGames, setTodayGames] = useState<Game[]>([]);
+  const [tomorrowGames, setTomorrowGames] = useState<Game[]>([]);
+  const [yesterdayGames, setYesterdayGames] = useState<Game[]>([]);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load sports data
+  useEffect(() => {
+    const loadSportsData = async () => {
+      setLoading(true);
+      try {
+        const sportsService = getSportsDataService();
+        const predictor = getSportsPredictor();
+
+        // Fetch all game data
+        const [live, today, tomorrow, yesterday] = await Promise.all([
+          sportsService.getLiveGames(),
+          sportsService.getGamesByDate(new Date()),
+          sportsService.getUpcomingGames(),
+          sportsService.getCompletedGames(),
+        ]);
+
+        setLiveGames(live);
+        setTodayGames(today);
+        setTomorrowGames(tomorrow);
+        setYesterdayGames(yesterday);
+
+        // Generate predictions for tomorrow's games
+        const tomorrowPredictions = predictor.predictGames(tomorrow);
+        setPredictions(tomorrowPredictions);
+      } catch (error) {
+        console.error('Error loading sports data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSportsData();
+  }, []);
 
   const casinoStrategies = [
     {
@@ -213,13 +255,198 @@ export default function GamblingPage() {
           </Card>
         </div>
 
-        <Tabs defaultValue="casino" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="live-sports" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="live-sports">Live Sports & AI</TabsTrigger>
             <TabsTrigger value="casino">Casino Games</TabsTrigger>
             <TabsTrigger value="sports">Sports Betting</TabsTrigger>
             <TabsTrigger value="arbitrage">Arbitrage</TabsTrigger>
             <TabsTrigger value="live">Live Opportunities</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="live-sports" className="space-y-6">
+            {loading ? (
+              <Card>
+                <CardContent className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <Activity className="h-12 w-12 animate-pulse mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">Loading live sports data...</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Live Games */}
+                {liveGames.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Activity className="mr-2 h-5 w-5 text-red-500 animate-pulse" />
+                        Live Games
+                      </CardTitle>
+                      <CardDescription>Games in progress now</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {liveGames.map((game) => (
+                          <div key={game.id} className="border rounded-lg p-4 bg-red-50/50">
+                            <div className="flex items-center justify-between mb-2">
+                              <Badge variant="destructive" className="animate-pulse">LIVE</Badge>
+                              <span className="text-xs text-muted-foreground">{game.league}</span>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium">{game.awayTeam.name}</span>
+                                <span className="text-2xl font-bold">{game.awayTeam.score}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium">{game.homeTeam.name}</span>
+                                <span className="text-2xl font-bold">{game.homeTeam.score}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Today's Games */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Calendar className="mr-2 h-5 w-5 text-blue-500" />
+                      Today's Games
+                    </CardTitle>
+                    <CardDescription>All games scheduled for today</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {todayGames.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">No games scheduled for today</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {todayGames.map((game) => (
+                          <div key={game.id} className="border rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <Badge>{game.league}</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {game.status === 'final' ? 'Final' : new Date(game.date).toLocaleTimeString()}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-center">
+                              <span className="font-medium">{game.awayTeam.abbreviation}</span>
+                              <span className="text-center text-xs text-muted-foreground">@</span>
+                              <span className="font-medium text-right">{game.homeTeam.abbreviation}</span>
+                            </div>
+                            {game.odds && (
+                              <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
+                                {game.odds.spread && <span className="mr-3">Spread: {game.odds.spread}</span>}
+                                {game.odds.overUnder && <span>O/U: {game.odds.overUnder}</span>}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* AI Predictions for Tomorrow */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Target className="mr-2 h-5 w-5 text-purple-500" />
+                      AI Predictions - Tomorrow's Games
+                    </CardTitle>
+                    <CardDescription>Machine learning predictions with confidence scores</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {predictions.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">No games scheduled for tomorrow</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {predictions.slice(0, 10).map((pred) => (
+                          <div key={pred.gameId} className="border rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <div className="font-medium">{pred.awayTeam} @ {pred.homeTeam}</div>
+                                <Badge variant="secondary" className="mt-1">{pred.league}</Badge>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-lg font-bold text-green-600">{pred.confidence}%</div>
+                                <Badge variant={pred.recommendation === 'BET' ? 'default' : pred.recommendation === 'HEDGE' ? 'secondary' : 'outline'}>
+                                  {pred.recommendation}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 mb-3 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">Predicted Winner:</span>
+                                <div className="font-medium">{pred.predictedWinner}</div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Predicted Score:</span>
+                                <div className="font-medium">{pred.predictedScore.away} - {pred.predictedScore.home}</div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Spread:</span>
+                                <div className="font-medium">{pred.spread.toFixed(1)}</div>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Total:</span>
+                                <div className="font-medium">O/U {pred.totalPoints.toFixed(1)}</div>
+                              </div>
+                            </div>
+                            <div className="text-xs space-y-1 p-2 bg-muted/50 rounded">
+                              <div><span className="font-semibold">Analysis:</span> {pred.analysis.keyFactors.slice(0, 2).join(', ')}</div>
+                              <div><span className="font-semibold">H2H:</span> {pred.analysis.headToHead}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Yesterday's Scores */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
+                      Yesterday's Results
+                    </CardTitle>
+                    <CardDescription>Final scores from previous day</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {yesterdayGames.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">No completed games from yesterday</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {yesterdayGames.map((game) => (
+                          <div key={game.id} className="border rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <Badge variant="outline">{game.league}</Badge>
+                              <span className="text-xs font-medium text-green-600">FINAL</span>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium">{game.awayTeam.name}</span>
+                                <span className="text-xl font-bold">{game.awayTeam.score}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium">{game.homeTeam.name}</span>
+                                <span className="text-xl font-bold">{game.homeTeam.score}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
 
           <TabsContent value="casino" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
