@@ -8,6 +8,8 @@ import { Progress } from '@/components/ui/progress';
 import { Database, TrendingUp, TrendingDown, DollarSign, RefreshCw, Activity } from 'lucide-react';
 import { getPortfolioTracker, type PortfolioSummary } from '@/lib/services/portfolio-tracker';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Settings } from 'lucide-react';
 
 export default function PortfolioPage() {
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
@@ -53,10 +55,18 @@ export default function PortfolioPage() {
               Real-time portfolio tracking with live market data
             </p>
           </div>
-          <Button onClick={loadPortfolio} variant="outline" size="sm">
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Link href="/portfolio/manage">
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Manage Positions
+              </Button>
+            </Link>
+            <Button onClick={loadPortfolio} variant="outline" size="sm">
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* AI Portfolio Advisor */}

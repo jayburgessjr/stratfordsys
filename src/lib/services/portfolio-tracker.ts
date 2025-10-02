@@ -54,14 +54,37 @@ class PortfolioTracker {
   private positions: Position[] = [];
 
   constructor() {
-    // Initialize with demo positions (in production, load from database/localStorage)
+    // Initialize with manual positions from localStorage or demo positions
     this.initializePositions();
   }
 
   /**
-   * Initialize demo portfolio positions
+   * Initialize portfolio positions from localStorage or demo data
    */
   private initializePositions() {
+    // Try to load from localStorage first (manual portfolio management)
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('manual_portfolio');
+      if (saved) {
+        try {
+          const manual = JSON.parse(saved);
+          this.positions = manual.map((p: any) => ({
+            symbol: p.symbol,
+            name: p.symbol,
+            shares: p.shares,
+            costBasis: p.costBasis,
+            purchaseDate: p.purchaseDate,
+            sector: undefined,
+          }));
+          console.log(`Loaded ${this.positions.length} positions from manual portfolio`);
+          return;
+        } catch (error) {
+          console.error('Error loading manual portfolio:', error);
+        }
+      }
+    }
+
+    // Fall back to demo positions
     this.positions = [
       {
         symbol: 'AAPL',
@@ -164,8 +187,9 @@ class PortfolioTracker {
    * Get portfolio summary with real-time data
    * Attempts to sync from Robinhood first, falls back to demo data
    */
-  async getPortfolioSummary(useRobinhood: boolean = true): Promise<PortfolioSummary> {
+  async getPortfolioSummary(useRobinhood: boolean = false): Promise<PortfolioSummary> {
     // Try to sync from Robinhood if enabled
+    // NOTE: Disabled by default for static export builds
     if (useRobinhood) {
       await this.syncFromRobinhood();
     }
