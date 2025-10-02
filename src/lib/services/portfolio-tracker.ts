@@ -1,9 +1,11 @@
 /**
  * Portfolio Tracker Service
  * Tracks stock positions with real-time prices from Alpha Vantage
+ * Supports syncing with Robinhood for live trading data
  */
 
 import { getRealMarketDataService, type RealTimeQuote } from './real-market-data';
+import { getRobinhoodService, type RobinhoodPortfolio } from './robinhood-service';
 
 export interface Position {
   symbol: string;
@@ -111,9 +113,48 @@ class PortfolioTracker {
   }
 
   /**
-   * Get portfolio summary with real-time data
+   * Sync portfolio from Robinhood (if configured)
    */
-  async getPortfolioSummary(): Promise<PortfolioSummary> {
+  async syncFromRobinhood(): Promise<boolean> {
+    try {
+      const robinhood = getRobinhoodService();
+
+      if (!robinhood.hasCredentials()) {
+        console.log('Robinhood credentials not configured, using demo data');
+        return false;
+      }
+
+      console.log('Syncing portfolio from Robinhood...');
+      const portfolio = await robinhood.getPortfolio();
+
+      // Convert Robinhood positions to our Position format
+      this.positions = portfolio.positions.map(pos => ({
+        symbol: pos.symbol,
+        name: pos.symbol, // We'll get the full name from market data
+        shares: pos.quantity,
+        costBasis: pos.averageBuyPrice,
+        purchaseDate: new Date().toISOString().split('T')[0], // Use today as placeholder
+        sector: undefined, // Will be enriched from market data
+      }));
+
+      console.log(`Successfully synced ${this.positions.length} positions from Robinhood`);
+      return true;
+    } catch (error) {
+      console.error('Failed to sync from Robinhood:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get portfolio summary with real-time data
+   * Attempts to sync from Robinhood first, falls back to demo data
+   */
+  async getPortfolioSummary(useRobinhood: boolean = true): Promise<PortfolioSummary> {
+    // Try to sync from Robinhood if enabled
+    if (useRobinhood) {
+      await this.syncFromRobinhood();
+    }
+
     const marketService = getRealMarketDataService();
     const holdings: PortfolioHolding[] = [];
 

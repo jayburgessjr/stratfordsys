@@ -630,6 +630,38 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                <h3 className="font-medium text-lg pt-4">Trading & Brokerage APIs</h3>
+
+                <div className="grid gap-4">
+                  <div className="p-4 border rounded-lg bg-blue-50/50 dark:bg-blue-950/20">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-medium">Robinhood Live Trading</h4>
+                        <p className="text-sm text-muted-foreground">Sync your real portfolio and trades</p>
+                      </div>
+                      <Badge variant="secondary">Not Configured</Badge>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="rh-username">Username/Email</Label>
+                          <Input id="rh-username" type="email" placeholder="your@email.com" />
+                        </div>
+                        <div>
+                          <Label htmlFor="rh-password">Password</Label>
+                          <Input id="rh-password" type="password" placeholder="••••••••" />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          🔒 Credentials stored securely in environment variables
+                        </p>
+                        <Button variant="outline" size="sm">Test Connection</Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <h3 className="font-medium text-lg pt-4">Lottery Data APIs</h3>
 
                 <div className="grid gap-4">

@@ -60,6 +60,7 @@
     "react-hook-form": "7.47.0",
     "recharts": "2.8.0",
     "redis": "^5.8.2",
+    "robinhood": "^1.8.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-react": "^5.29.1",
     "tailwind-merge": "2.2.0",
