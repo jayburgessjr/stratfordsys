@@ -6,7 +6,7 @@ import { GradientStatCard } from './gradient-stat-card';
 
 export function PortfolioQuickStats() {
   return (
-    <div className="space-y-4">
+    <>
       <GradientStatCard
         title="Total Portfolio"
         value="$124,567"
@@ -42,15 +42,6 @@ export function PortfolioQuickStats() {
         gradient="orange"
         trend={{ value: "66% win rate", isPositive: true }}
       />
-
-      <GradientStatCard
-        title="Risk Level"
-        value="Medium"
-        subtitle="Portfolio risk assessment"
-        icon={Shield}
-        gradient="teal"
-        trend={{ value: "Balanced", isPositive: true }}
-      />
-    </div>
+    </>
   );
 }

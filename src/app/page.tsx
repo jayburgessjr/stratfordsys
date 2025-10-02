@@ -6,6 +6,7 @@ import { MarketOverview } from '@/components/dashboard/market-overview';
 import { RealMarketDataWidget } from '@/components/dashboard/real-market-data-widget';
 import { PortfolioQuickStats } from '@/components/dashboard/portfolio-quick-stats';
 import { DemoPerformanceOverview } from '@/components/dashboard/demo-performance-overview';
+import { AdditionalPortfolioStats } from '@/components/dashboard/additional-portfolio-stats';
 import { DemoEquityCurveChart } from '@/components/dashboard/demo-equity-curve-chart';
 import { DemoTradingActivity } from '@/components/dashboard/demo-trading-activity';
 import { DemoRiskAnalysis } from '@/components/dashboard/demo-risk-analysis';
@@ -25,26 +26,26 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Two Column Layout: Market Data (Left) + Portfolio Stats (Right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Left Column - Real Market Data (2/3 width) */}
-          <div className="lg:col-span-2">
-            <Suspense fallback={<LoadingSpinner />}>
-              <RealMarketDataWidget />
-            </Suspense>
-          </div>
+        {/* Real Market Data - 3 Columns */}
+        <Suspense fallback={<LoadingSpinner />}>
+          <RealMarketDataWidget />
+        </Suspense>
 
-          {/* Right Column - Portfolio Quick Stats (1/3 width) */}
-          <div className="lg:col-span-1">
-            <Suspense fallback={<LoadingSpinner />}>
-              <PortfolioQuickStats />
-            </Suspense>
-          </div>
+        {/* Portfolio Stats - Row 1: 4 Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Suspense fallback={<LoadingSpinner />}>
+            <PortfolioQuickStats />
+          </Suspense>
         </div>
 
-        {/* Performance Overview Cards */}
+        {/* Portfolio Stats - Row 2: 4 Columns */}
         <Suspense fallback={<LoadingSpinner />}>
           <DemoPerformanceOverview />
+        </Suspense>
+
+        {/* Portfolio Stats - Row 3: 4 Columns */}
+        <Suspense fallback={<LoadingSpinner />}>
+          <AdditionalPortfolioStats />
         </Suspense>
 
         {/* Portfolio Analytics: Equity Curve, Win/Loss, Drawdown */}
