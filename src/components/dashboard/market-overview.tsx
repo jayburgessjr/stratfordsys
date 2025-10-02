@@ -14,11 +14,8 @@ import {
   Bitcoin,
   Zap,
   AlertTriangle,
-  RefreshCw,
-  Wifi,
-  WifiOff
+  RefreshCw
 } from 'lucide-react';
-import { useMarketData, useTradingSignals, useNewsAlerts } from '@/lib/hooks/use-market-data';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import { getNewsService, type NewsArticle } from '@/lib/services/news-service';
 
@@ -34,20 +31,9 @@ interface MarketData {
 }
 
 export function MarketOverview() {
-  const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [marketNews, setMarketNews] = useState<NewsArticle[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
-
-  // Real-time data hooks
-  const marketData = useMarketData({
-    symbols: ['SPY', 'QQQ', 'AAPL', 'GOOGL', 'MSFT', 'TSLA', 'BTC-USD', 'ETH-USD'],
-    autoConnect: true,
-    maxDataPoints: 50
-  });
-
-  const tradingSignals = useTradingSignals(20);
-  const newsAlerts = useNewsAlerts(10);
 
   const marketIndices: MarketData[] = [
     { symbol: 'SPY', name: 'S&P 500', price: '$428.67', change: '+$2.34', changePercent: '+0.55%', trend: 'up' },
@@ -105,66 +91,24 @@ export function MarketOverview() {
     return () => clearInterval(interval);
   }, []);
 
-  const refreshData = () => {
+  const refreshData = async () => {
     setIsRefreshing(true);
-
-    // Reconnect to real-time data
-    if (marketData.isConnected) {
-      marketData.disconnect();
-      setTimeout(() => {
-        marketData.connect().finally(() => {
-          setLastUpdate(new Date());
-          setIsRefreshing(false);
-        });
-      }, 500);
-    } else {
-      marketData.connect().finally(() => {
-        setLastUpdate(new Date());
-        setIsRefreshing(false);
-      });
+    try {
+      const newsService = getNewsService();
+      const news = await newsService.getMarketNews(['blockchain', 'earnings', 'financial_markets'], 5);
+      setMarketNews(news);
+    } catch (error) {
+      console.error('Error refreshing news:', error);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
-  // Update lastUpdate when we receive new market data
-  useEffect(() => {
-    if (marketData.lastUpdate) {
-      setLastUpdate(new Date(marketData.lastUpdate));
-    }
-  }, [marketData.lastUpdate]);
-
   return (
     <div className="space-y-6">
-      {/* Market Status Header */}
+      {/* Header with Refresh */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            {marketData.isConnected ? (
-              <Wifi className="h-4 w-4 text-green-500" />
-            ) : marketData.isConnecting ? (
-              <Activity className="h-4 w-4 text-yellow-500 animate-pulse" />
-            ) : (
-              <WifiOff className="h-4 w-4 text-red-500" />
-            )}
-            <span className="text-sm font-medium">
-              {marketData.isConnected ? 'Live Data' :
-               marketData.isConnecting ? 'Connecting...' :
-               'Disconnected'}
-            </span>
-            {marketData.error && (
-              <Badge variant="destructive" className="text-xs">
-                Error: {marketData.error}
-              </Badge>
-            )}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Last updated: {lastUpdate.toLocaleTimeString()}
-          </div>
-          {Object.keys(marketData.data).length > 0 && (
-            <div className="text-sm text-muted-foreground">
-              • {Object.keys(marketData.data).length} symbols tracked
-            </div>
-          )}
-        </div>
+        <h2 className="text-2xl font-bold">Market Overview</h2>
         <Button variant="outline" size="sm" onClick={refreshData} disabled={isRefreshing}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
           Refresh

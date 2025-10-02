@@ -149,7 +149,8 @@ export function useMarketData(options: UseMarketDataOptions = {}) {
     return () => {
       disconnect()
     }
-  }, [autoConnect, connect, disconnect])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoConnect])
 
   return {
     ...state,
