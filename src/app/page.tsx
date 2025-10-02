@@ -9,7 +9,6 @@ import { DemoPerformanceOverview } from '@/components/dashboard/demo-performance
 import { DemoEquityCurveChart } from '@/components/dashboard/demo-equity-curve-chart';
 import { DemoTradingActivity } from '@/components/dashboard/demo-trading-activity';
 import { DemoRiskAnalysis } from '@/components/dashboard/demo-risk-analysis';
-import { DemoStrategyConfiguration } from '@/components/dashboard/demo-strategy-configuration';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function Dashboard() {
@@ -48,34 +47,24 @@ export default function Dashboard() {
           <DemoPerformanceOverview />
         </Suspense>
 
-        {/* Real-time Market Overview */}
-        <Suspense fallback={<LoadingSpinner />}>
-          <MarketOverview />
-        </Suspense>
+        {/* Portfolio Analytics: Equity Curve, Win/Loss, Drawdown */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Suspense fallback={<LoadingSpinner />}>
+            <DemoEquityCurveChart />
+          </Suspense>
 
-        {/* Main Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Equity Curve Chart */}
-          <div className="lg:col-span-2">
-            <Suspense fallback={<LoadingSpinner />}>
-              <DemoEquityCurveChart />
-            </Suspense>
-          </div>
-
-          {/* Trading Activity */}
           <Suspense fallback={<LoadingSpinner />}>
             <DemoTradingActivity />
           </Suspense>
 
-          {/* Risk Analysis */}
           <Suspense fallback={<LoadingSpinner />}>
             <DemoRiskAnalysis />
           </Suspense>
         </div>
 
-        {/* Strategy Configuration */}
+        {/* Real-time Market Overview */}
         <Suspense fallback={<LoadingSpinner />}>
-          <DemoStrategyConfiguration />
+          <MarketOverview />
         </Suspense>
       </div>
     </DashboardLayout>

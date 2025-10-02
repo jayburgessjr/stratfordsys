@@ -1,9 +1,12 @@
 'use client';
 
+import { Suspense } from 'react';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { AgentDashboard } from '@/components/agents/agent-dashboard';
 import { AITradingAgent } from '@/components/ai/ai-trading-agent';
 import { AIStrategyGenerator } from '@/components/ai/ai-strategy-generator';
+import { DemoStrategyConfiguration } from '@/components/dashboard/demo-strategy-configuration';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function AgentsPage() {
   return (
@@ -17,6 +20,11 @@ export default function AgentsPage() {
             </p>
           </div>
         </div>
+
+        {/* Strategy Configuration */}
+        <Suspense fallback={<LoadingSpinner />}>
+          <DemoStrategyConfiguration />
+        </Suspense>
 
         {/* AI Features Grid */}
         <div className="grid gap-6 md:grid-cols-2">
