@@ -55,7 +55,7 @@ This guide provides comprehensive instructions for deploying the Stratford AI de
 
 5. **Set Environment Variables**
    ```bash
-   vercel env add ALPHA_VANTAGE_API_KEY
+   vercel env add NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY
    vercel env add STRATFORD_RANDOM_SEED
    vercel env add LOG_LEVEL
    ```
@@ -120,7 +120,7 @@ STRATFORD_VERSION=1.0.0
 STRATFORD_RANDOM_SEED=42
 
 # API Keys
-ALPHA_VANTAGE_API_KEY=your_api_key
+NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY=your_api_key
 
 # Logging
 LOG_LEVEL=warn

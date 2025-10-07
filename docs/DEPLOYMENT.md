@@ -59,7 +59,7 @@ JWT_SECRET="your-32-character-secret"
 ENCRYPTION_MASTER_KEY="your-32-character-secret"
 
 # Market Data (At least one required)
-ALPHA_VANTAGE_API_KEY="your-api-key"
+NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY="your-api-key"
 POLYGON_API_KEY="your-api-key"
 IEX_CLOUD_API_KEY="your-api-key"
 

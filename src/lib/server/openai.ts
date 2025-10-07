@@ -26,9 +26,9 @@ function getClient(): OpenAI {
     return client;
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured.');
+    throw new Error('NEXT_PUBLIC_OPENAI_API_KEY is not configured.');
   }
 
   client = new OpenAI({ apiKey });

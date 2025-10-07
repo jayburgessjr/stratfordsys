@@ -25,12 +25,12 @@ describe('Environment Configuration', () => {
 
   it('should provide default values for missing variables', async () => {
     // Remove some environment variables using vi.stubEnv
-    vi.stubEnv('ALPHA_VANTAGE_API_KEY', '');
+    vi.stubEnv('NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY', '');
     vi.stubEnv('LOG_LEVEL', '');
 
     const { env } = await import('./env');
 
-    expect(env.ALPHA_VANTAGE_API_KEY).toBeUndefined();
+    expect(env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY).toBeUndefined();
     expect(env.LOG_LEVEL).toBe('debug'); // Default value
   });
 
@@ -43,7 +43,7 @@ describe('Environment Configuration', () => {
   });
 
   it('should provide API configuration helpers', async () => {
-    vi.stubEnv('ALPHA_VANTAGE_API_KEY', 'test-key');
+    vi.stubEnv('NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY', 'test-key');
     vi.stubEnv('API_TIMEOUT_MS', '5000');
 
     const { getApiConfig } = await import('./env');

@@ -10,7 +10,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const cache = new Map<string, CacheEntry>();
 
 function getApiKey(): string | null {
-  return process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY || process.env.ALPHA_VANTAGE_API_KEY || null;
+  return process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY || null;
 }
 
 function createCacheKey(prefix: string, parts: string[]): string {

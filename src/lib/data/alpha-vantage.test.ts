@@ -10,7 +10,7 @@ import { AlphaVantageClient, AlphaVantageError, createAlphaVantageClient, testAl
 import type { AlphaVantageResponse } from '@/types/market-data';
 
 // Mock the environment to use test API key
-vi.stubEnv('ALPHA_VANTAGE_API_KEY', 'test-api-key');
+vi.stubEnv('NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY', 'test-api-key');
 
 describe('AlphaVantageClient', () => {
   let client: AlphaVantageClient;

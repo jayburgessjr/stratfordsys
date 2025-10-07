@@ -252,7 +252,7 @@ const generatePersonalStrategy = async () => {
 
 1. Go to: https://app.netlify.com/sites/stratfordsys/configuration/env
 2. Add variable:
-   - **Key:** `OPENAI_API_KEY`
+   - **Key:** `NEXT_PUBLIC_OPENAI_API_KEY`
    - **Value:** `your-openai-api-key-here` (the key starting with sk-proj-)
 3. Click "Save"
 
@@ -293,7 +293,7 @@ Wait 2-3 minutes for Netlify to deploy.
 ## Troubleshooting
 
 ### Error: "OpenAI API key not provided"
-**Solution:** Make sure `.env.local` has `OPENAI_API_KEY`
+**Solution:** Make sure `.env.local` has `NEXT_PUBLIC_OPENAI_API_KEY`
 
 ### Error: "Rate limit exceeded"
 **Solution:**

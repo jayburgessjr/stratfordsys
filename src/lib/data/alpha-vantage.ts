@@ -36,7 +36,7 @@ export class AlphaVantageClient {
   private readonly cache = new Map<string, CacheEntry>();
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || env.ALPHA_VANTAGE_API_KEY || '';
+    this.apiKey = apiKey || env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY || '';
     this.rateLimiter = new RateLimiter(
       API_CONFIG.ALPHA_VANTAGE.REQUESTS_PER_MINUTE,
       60000 // 1 minute

@@ -46,7 +46,7 @@
 
 ### Troubleshooting:
 ❌ **Error: "OpenAI API key not provided"**
-→ Check `.env.local` has OPENAI_API_KEY
+→ Check `.env.local` has NEXT_PUBLIC_OPENAI_API_KEY
 
 ❌ **Error: "Rate limit exceeded"**
 → Wait 60 seconds, try again
@@ -255,7 +255,7 @@ Go to: https://platform.openai.com/usage
 
 ### Before Testing:
 - [ ] Dev server running (http://localhost:3000)
-- [ ] `.env.local` has OPENAI_API_KEY
+- [ ] `.env.local` has NEXT_PUBLIC_OPENAI_API_KEY
 - [ ] OpenAI account has credits ($5+ recommended)
 - [ ] Browser console open (F12)
 

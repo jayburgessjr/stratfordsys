@@ -36,16 +36,7 @@ Click **"Add a variable"** button and enter:
 
 Click **"Create variable"**
 
-### 4. Add Backup Variable (Optional but Recommended)
-
-Add another variable:
-
-**Key:** `ALPHA_VANTAGE_API_KEY`
-**Value:** `26SZR0LE05TXVNG6`
-
-Click **"Create variable"**
-
-### 5. Trigger a New Deploy
+### 4. Trigger a New Deploy
 
 Option A: **Automatic (Recommended)**
 - Your site should auto-deploy since you just pushed to GitHub
@@ -87,14 +78,12 @@ Option B: **Manual**
 ### For Local Development (`.env.local`)
 ```bash
 NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY=26SZR0LE05TXVNG6
-ALPHA_VANTAGE_API_KEY=26SZR0LE05TXVNG6
 NEXT_PUBLIC_USE_REAL_DATA=true
 ```
 
 ### For Netlify (Set in dashboard)
 ```
 NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY = 26SZR0LE05TXVNG6
-ALPHA_VANTAGE_API_KEY = 26SZR0LE05TXVNG6
 NEXT_PUBLIC_USE_REAL_DATA = true
 ```
 

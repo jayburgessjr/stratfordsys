@@ -15,7 +15,7 @@ const CACHE_TTL = 60 * 1000; // 1 minute
 const cache = new Map<string, CacheEntry>();
 
 function getApiKey(): string {
-  const key = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY || process.env.ALPHA_VANTAGE_API_KEY;
+  const key = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY;
   if (!key) {
     throw new Error('NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY is not configured.');
   }

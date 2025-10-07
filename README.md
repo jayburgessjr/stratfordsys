@@ -310,7 +310,7 @@ Only needed if you want **real market data** instead of simulated data:
 **1. Alpha Vantage API** (Recommended - Free tier available)
 ```bash
 # Get free API key from: https://www.alphavantage.co/support/#api-key
-ALPHA_VANTAGE_API_KEY="your-api-key-here"
+NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY="your-api-key-here"
 ```
 - **Used for**: Real-time stock prices, crypto data, forex rates
 - **Free tier**: 5 API calls/minute, 500 calls/day
@@ -412,7 +412,7 @@ pnpm dev
 cp .env.example .env.local
 
 # 3. Add your API key
-echo "ALPHA_VANTAGE_API_KEY=your_key_here" >> .env.local
+echo "NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY=your_key_here" >> .env.local
 
 # 4. Start the app
 pnpm dev

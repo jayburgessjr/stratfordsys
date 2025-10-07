@@ -14,7 +14,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
   // API Configuration
-  ALPHA_VANTAGE_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_OPENAI_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY: z.string().optional(),
   ALPHA_VANTAGE_BASE_URL: z.string().url().default('https://www.alphavantage.co/query'),
   YAHOO_FINANCE_ENABLED: z.string().transform(val => val === 'true').default('true'),
 
@@ -92,7 +93,7 @@ export const isTest = env.NODE_ENV === 'test';
 // API configuration helpers
 export const getApiConfig = () => ({
   alphaVantage: {
-    apiKey: env.ALPHA_VANTAGE_API_KEY,
+    apiKey: env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY,
     baseUrl: env.ALPHA_VANTAGE_BASE_URL,
     timeout: env.API_TIMEOUT_MS,
   },

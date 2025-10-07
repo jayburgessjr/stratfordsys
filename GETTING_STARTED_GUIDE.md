@@ -143,7 +143,7 @@ if (signal.confidence > 85 && signal.action === 'BUY') {
 2. **Add to Your App:**
    ```bash
    # Create .env.local file
-   echo "ALPHA_VANTAGE_API_KEY=your_key_here" > .env.local
+   echo "NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY=your_key_here" > .env.local
    ```
 
 3. **Connect Real Data:**
@@ -438,7 +438,7 @@ if (signal.confidence > 85 && signal.action === 'BUY') {
 # Visit: https://www.alphavantage.co/support/#api-key
 
 # 2. Add to your app
-echo "ALPHA_VANTAGE_API_KEY=your_key_here" >> .env.local
+echo "NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY=your_key_here" >> .env.local
 
 # 3. Restart app
 pnpm dev
