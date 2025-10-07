@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Brain, TrendingUp, TrendingDown, Loader2, AlertCircle } from 'lucide-react';
-import { getOpenAIService, TradingSignal } from '@/lib/services/openai-service';
+import { requestTradingSignal } from '@/lib/api/ai';
+import type { TradingSignal } from '@/types/ai';
 
 export function AITradingAgent() {
   const [symbol, setSymbol] = useState('AAPL');
@@ -21,20 +22,18 @@ export function AITradingAgent() {
     setError(null);
 
     try {
-      const service = getOpenAIService();
-
       // In a real app, you'd fetch current market data here
       // For now, using sample data
       const currentPrice = Math.random() * 200 + 50;
       const change = (Math.random() - 0.5) * 10;
       const volume = Math.floor(Math.random() * 50000000) + 10000000;
 
-      const analysis = await service.analyzeStock(
-        symbol.toUpperCase(),
+      const analysis = await requestTradingSignal({
+        symbol: symbol.toUpperCase(),
         currentPrice,
         change,
-        volume
-      );
+        volume,
+      });
 
       setSignal(analysis);
     } catch (err) {

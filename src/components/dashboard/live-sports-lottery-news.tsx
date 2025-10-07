@@ -102,7 +102,7 @@ export function LiveSportsLotteryNews() {
               </div>
             ) : todayGames.length > 0 ? (
               <div className="space-y-3">
-                <div className="text-sm text-muted-foreground mb-2">Today's Games</div>
+                <div className="text-sm text-muted-foreground mb-2">Today&rsquo;s Games</div>
                 {todayGames.slice(0, 5).map((game) => (
                   <div key={game.id} className="p-3 border rounded-lg">
                     <div className="flex items-center justify-between">

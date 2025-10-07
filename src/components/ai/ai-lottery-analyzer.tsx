@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Sparkles, AlertTriangle } from 'lucide-react';
-import { getOpenAIService } from '@/lib/services/openai-service';
+import { requestAIChat } from '@/lib/api/ai';
 
 interface LotteryAnalysis {
   hotNumbers: number[];
@@ -29,8 +29,6 @@ export function AILotteryAnalyzer() {
     setError(null);
 
     try {
-      const service = getOpenAIService();
-
       // Generate mock historical data for demo
       const historicalDrawings = generateMockHistory(lotteryType);
 
@@ -51,7 +49,10 @@ Provide analysis in EXACT JSON format:
 
 Be honest about lottery being negative expected value. Emphasize responsible gambling.`;
 
-      const response = await service.chat(prompt, 'You are a statistician analyzing lottery patterns. Always emphasize that lottery has negative expected value.');
+      const response = await requestAIChat({
+        message: prompt,
+        context: 'You are a statistician analyzing lottery patterns. Always emphasize that lottery has negative expected value.',
+      });
 
       // Parse the JSON response
       const parsed = JSON.parse(response);
@@ -255,7 +256,7 @@ Be honest about lottery being negative expected value. Emphasize responsible gam
             {/* Disclaimer */}
             <div className="text-xs text-center text-muted-foreground p-3 bg-muted rounded-md">
               ⚠️ Lottery is entertainment. Every combination has equal probability.
-              Past results don't predict future outcomes. Play responsibly within your budget.
+              Past results don&rsquo;t predict future outcomes. Play responsibly within your budget.
             </div>
           </div>
         )}

@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Brain, AlertCircle, TrendingUp, Shield, AlertTriangle } from 'lucide-react';
-import { getOpenAIService, PortfolioAdvice } from '@/lib/services/openai-service';
+import { requestPortfolioAdvice } from '@/lib/api/ai';
+import type { PortfolioAdvice } from '@/types/ai';
 
 export function AIPortfolioAdvisor() {
   const [advice, setAdvice] = useState<PortfolioAdvice | null>(null);
@@ -28,8 +29,10 @@ export function AIPortfolioAdvisor() {
     setError(null);
 
     try {
-      const service = getOpenAIService();
-      const analysis = await service.analyzePortfolio(mockPortfolio, totalValue);
+      const analysis = await requestPortfolioAdvice({
+        positions: mockPortfolio,
+        totalValue,
+      });
       setAdvice(analysis);
     } catch (err) {
       console.error('Portfolio analysis error:', err);

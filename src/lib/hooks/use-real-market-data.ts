@@ -45,18 +45,7 @@ export function useRealMarketData(options: UseRealMarketDataOptions): UseRealMar
 
     try {
       const service = getRealMarketDataService();
-      const quotesMap: Record<string, RealTimeQuote> = {};
-
-      // Fetch quotes one by one to respect rate limits
-      for (const symbol of symbolsRef.current) {
-        try {
-          const quote = await service.getQuote(symbol);
-          quotesMap[symbol] = quote;
-        } catch (err) {
-          console.error(`Failed to fetch ${symbol}:`, err);
-          // Continue with other symbols
-        }
-      }
+      const quotesMap = await service.getQuotes(symbolsRef.current);
 
       setQuotes(quotesMap);
       setLastUpdate(Date.now());
@@ -117,17 +106,8 @@ export function useRealCryptoData(cryptoSymbols: string[], market: string = 'USD
 
       try {
         const service = getRealMarketDataService();
-        const quotesMap: Record<string, RealTimeQuote> = {};
-
-        for (const symbol of cryptoSymbols) {
-          try {
-            const quote = await service.getCryptoQuote(symbol, market);
-            quotesMap[symbol] = quote;
-          } catch (err) {
-            console.error(`Failed to fetch ${symbol}:`, err);
-          }
-        }
-
+        const symbols = cryptoSymbols.map(symbol => `${symbol.toUpperCase()}-${market.toUpperCase()}`);
+        const quotesMap = await service.getQuotes(symbols);
         setQuotes(quotesMap);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch crypto data';

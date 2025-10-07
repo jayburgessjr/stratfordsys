@@ -316,7 +316,7 @@ export default function GamblingPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <Calendar className="mr-2 h-5 w-5 text-blue-500" />
-                      Today's Games
+                      Today&rsquo;s Games
                     </CardTitle>
                     <CardDescription>All games scheduled for today</CardDescription>
                   </CardHeader>
@@ -356,7 +356,7 @@ export default function GamblingPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <Target className="mr-2 h-5 w-5 text-purple-500" />
-                      AI Predictions - Tomorrow's Games
+                      AI Predictions - Tomorrow&rsquo;s Games
                     </CardTitle>
                     <CardDescription>Machine learning predictions with confidence scores</CardDescription>
                   </CardHeader>
@@ -408,12 +408,12 @@ export default function GamblingPage() {
                   </CardContent>
                 </Card>
 
-                {/* Yesterday's Scores */}
+                {/* Yesterday&rsquo;s Scores */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
-                      Yesterday's Results
+                      Yesterday&rsquo;s Results
                     </CardTitle>
                     <CardDescription>Final scores from previous day</CardDescription>
                   </CardHeader>

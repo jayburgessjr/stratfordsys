@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
-import { getOpenAIService, StrategyRecommendation } from '@/lib/services/openai-service';
+import { requestStrategy } from '@/lib/api/ai';
+import type { StrategyRecommendation } from '@/types/ai';
 
 export function AIStrategyGenerator() {
   const [goals, setGoals] = useState('');
@@ -29,16 +30,15 @@ export function AIStrategyGenerator() {
     setError(null);
 
     try {
-      const service = getOpenAIService();
       const assets = preferredAssets.split(',').map(s => s.trim()).filter(Boolean);
       const capitalNum = parseFloat(capital) || 10000;
 
-      const recommendation = await service.generateStrategy(
+      const recommendation = await requestStrategy({
         goals,
         riskTolerance,
-        capitalNum,
-        assets
-      );
+        capital: capitalNum,
+        preferredAssets: assets,
+      });
 
       setStrategy(recommendation);
     } catch (err) {

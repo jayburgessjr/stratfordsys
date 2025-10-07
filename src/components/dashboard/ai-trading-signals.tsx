@@ -9,7 +9,7 @@ import { getRealMarketDataService } from '@/lib/services/real-market-data';
 import { getLotteryAnalyzer } from '@/lib/services/lottery-analyzer';
 import { getSportsPredictor } from '@/lib/services/sports-predictor';
 import { getSportsDataService } from '@/lib/services/sports-data';
-import { getOpenAIService } from '@/lib/services/openai-service';
+import { requestTradingSignal } from '@/lib/api/ai';
 
 interface Signal {
   asset: string;
@@ -38,7 +38,6 @@ export function AITradingSignals() {
     try {
       // Stock Signals from OpenAI + real market data
       const marketService = getRealMarketDataService();
-      const openAI = getOpenAIService();
       const stockSymbols = ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA'];
       const stockData = await Promise.all(
         stockSymbols.map(symbol => marketService.getQuote(symbol))
@@ -47,12 +46,12 @@ export function AITradingSignals() {
       // Use OpenAI to analyze each stock (HIGH criticality with intelligent routing)
       const stockSignalPromises = stockData.map(async (quote) => {
         try {
-          const aiSignal = await openAI.analyzeStock(
-            quote.symbol,
-            quote.price,
-            quote.changePercent,
-            quote.volume || 0
-          );
+          const aiSignal = await requestTradingSignal({
+            symbol: quote.symbol,
+            currentPrice: quote.price,
+            change: quote.changePercent,
+            volume: quote.volume || 0,
+          });
 
           return {
             asset: quote.symbol,
