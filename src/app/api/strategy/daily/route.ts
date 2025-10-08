@@ -1,304 +1,451 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getQuotes } from '@/lib/server/market-data';
 import { getMarketNews } from '@/lib/server/news';
 import { chat } from '@/lib/server/openai';
-import type { NewsArticle } from '@/types/news';
+import { getSportsDataService } from '@/lib/services/sports-data';
+import { getSportsPredictor } from '@/lib/services/sports-predictor';
 import type { RealTimeQuote } from '@/lib/services/real-market-data';
+import type { NewsArticle } from '@/types/news';
 
-const STOCK_SYMBOLS = ['AAPL', 'MSFT', 'NVDA', 'SPY'];
+type SportsLine = {
+  event: string;
+  league: string;
+  confidence: number;
+  line: string;
+  kickoff: string;
+  notes?: string[];
+};
+
+const STOCK_SYMBOLS = ['SPY', 'AAPL', 'MSFT', 'NVDA'];
 const CRYPTO_SYMBOLS = ['BTC', 'ETH', 'SOL'];
-const SPORT_LINES = [
-  { event: 'NFL: Chiefs vs Bills', line: 'Chiefs -3.5', confidence: 62 },
-  { event: 'NBA: Lakers vs Warriors', line: 'Over 228.5', confidence: 58 },
-  { event: 'MLB: Yankees vs Red Sox', line: 'Yankees Moneyline', confidence: 55 },
-];
+const SPORTS_LEAGUES = ['NFL', 'NBA', 'MLB', 'NHL'];
 
-const BASE_BUDGET = 40;
-const TARGET_WINNINGS = 30;
+const sportsDataService = getSportsDataService();
+const sportsPredictor = getSportsPredictor();
 
-interface StrategyRecommendation {
-  title: string;
-  summary: string;
-  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  budget: number;
-  expectedReturn: number;
-  keyInsights: string[];
-  bankrollTips: string;
-  segments: Array<{
-    category: 'Stocks' | 'Crypto' | 'Sports' | 'Lottery' | string;
-    allocation: number;
-    expectedReturn: number;
-    recommendations: Array<{
-      title: string;
-      action: string;
-      rationale: string;
-      confidence: number;
-      stake: number;
-      projectedReturn: number;
-    }>;
-  }>;
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+
+interface Cached<T> {
+  data: T;
+  timestamp: number;
 }
 
-function buildFallbackStrategy(): StrategyRecommendation {
+let quotesCache: Cached<Record<string, RealTimeQuote>> | null = null;
+let newsCache: Cached<NewsArticle[]> | null = null;
+let sportsCache: Cached<SportsLine[]> | null = null;
+
+const strategySchema = z.object({
+  title: z.string(),
+  summary: z.string(),
+  riskLevel: z.enum(['LOW', 'MEDIUM', 'HIGH']),
+  budget: z.number(),
+  expectedReturn: z.number(),
+  keyInsights: z.array(z.string()),
+  bankrollTips: z.string(),
+  segments: z.array(
+    z.object({
+      category: z.string(),
+      allocation: z.number(),
+      expectedReturn: z.number(),
+      recommendations: z.array(
+        z.object({
+          title: z.string(),
+          action: z.string(),
+          rationale: z.string(),
+          confidence: z.number().min(0).max(100),
+          stake: z.number(),
+          projectedReturn: z.number(),
+        })
+      ),
+    })
+  ),
+});
+
+const requestSchema = z.object({
+  budget: z.number().min(10).max(1000).default(40),
+  riskLevel: z.enum(['LOW', 'MEDIUM', 'HIGH']).default('MEDIUM'),
+  persona: z.enum(['conservative', 'balanced', 'aggressive']).default('balanced'),
+});
+
+const personaPrompts: Record<string, string> = {
+  conservative: 'Capital preservation first. Focus on low-volatility equities, hedged crypto, and limited exposure to sports or lottery plays with high confidence edges only.',
+  balanced: 'Blend growth and defense. Distribute capital across equities, crypto momentum, airtight sports angles, and small lottery coverage.',
+  aggressive: 'Maximize upside. Prioritise asymmetric bets, momentum trades, parlays, and higher-volatility crypto positions while acknowledging increased drawdown risk.',
+};
+
+function roundCurrency(value: number, decimals = 2) {
+  return Number.isFinite(value) ? parseFloat(value.toFixed(decimals)) : 0;
+}
+
+async function getQuotesSnapshot() {
+  if (quotesCache && Date.now() - quotesCache.timestamp < CACHE_TTL) {
+    return quotesCache.data;
+  }
+  const symbols = [...STOCK_SYMBOLS, ...CRYPTO_SYMBOLS];
+  const data = await getQuotes(symbols);
+  quotesCache = { data, timestamp: Date.now() };
+  return data;
+}
+
+async function getNewsSnapshot() {
+  if (newsCache && Date.now() - newsCache.timestamp < CACHE_TTL) {
+    return newsCache.data;
+  }
+  const topics = ['financial_markets', 'crypto', 'sports_betting'];
+  const news = await getMarketNews(topics, 6);
+  newsCache = { data: news, timestamp: Date.now() };
+  return news;
+}
+
+async function buildSportsLines(): Promise<SportsLine[]> {
+  const upcomingGames = await sportsDataService.getUpcomingGames();
+  const filtered = upcomingGames
+    .filter((game) => SPORTS_LEAGUES.includes(game.league))
+    .slice(0, 10);
+
+  const predictions = sportsPredictor.predictGames(filtered);
+  const topBets = predictions
+    .filter((prediction) => prediction.recommendation !== 'SKIP')
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, 5);
+
+  return topBets.map((prediction) => {
+    const game = filtered.find((g) => g.id === prediction.gameId);
+    const odds = game?.odds;
+    const line = odds?.spread ?? `${prediction.predictedWinner} ${prediction.spread >= 0 ? '-' : '+'}${Math.abs(prediction.spread).toFixed(1)}`;
+
+    return {
+      event: `${prediction.awayTeam} @ ${prediction.homeTeam}`,
+      league: prediction.league,
+      confidence: prediction.confidence,
+      line,
+      kickoff: game?.date ?? new Date().toISOString(),
+      notes: prediction.analysis.keyFactors.slice(0, 2),
+    };
+  });
+}
+
+async function getSportsSnapshot(): Promise<SportsLine[]> {
+  if (sportsCache && Date.now() - sportsCache.timestamp < CACHE_TTL) {
+    return sportsCache.data;
+  }
+  const lines = await buildSportsLines();
+  sportsCache = { data: lines, timestamp: Date.now() };
+  return lines;
+}
+
+function ensureAllocations(strategy: z.infer<typeof strategySchema>) {
+  const totalAllocation = strategy.segments.reduce((sum, segment) => sum + segment.allocation, 0);
+  const totalReturn = strategy.segments.reduce((sum, segment) => sum + segment.expectedReturn, 0);
+
+  if (totalAllocation <= 0) {
+    const fallback = buildFallbackStrategy(strategy.budget, strategy.expectedReturn);
+    return fallback;
+  }
+
+  const allocationScale = strategy.budget / totalAllocation;
+  const returnScale = totalReturn > 0 ? strategy.expectedReturn / totalReturn : 0;
+
+  const segments = strategy.segments.map((segment) => {
+    const scaledAllocation = roundCurrency(segment.allocation * allocationScale);
+    const scaledReturn = returnScale ? roundCurrency(segment.expectedReturn * returnScale) : roundCurrency(segment.expectedReturn);
+
+    const stakeTotal = segment.recommendations.reduce((sum, rec) => sum + rec.stake, 0);
+    const projectedTotal = segment.recommendations.reduce((sum, rec) => sum + rec.projectedReturn, 0);
+
+    const stakeScale = stakeTotal > 0 ? scaledAllocation / stakeTotal : 0;
+    const projectedScale = projectedTotal > 0 ? scaledReturn / projectedTotal : 0;
+
+    const recommendations = segment.recommendations.map((rec) => ({
+      ...rec,
+      stake: stakeScale ? roundCurrency(rec.stake * stakeScale) : roundCurrency(rec.stake),
+      projectedReturn: projectedScale ? roundCurrency(rec.projectedReturn * projectedScale) : roundCurrency(rec.projectedReturn),
+    }));
+
+    return {
+      ...segment,
+      allocation: scaledAllocation,
+      expectedReturn: scaledReturn,
+      recommendations,
+    };
+  });
+
   return {
-    title: 'Balanced Multi-Market Opportunity Map',
-    summary:
-      'Core AI signals favour a barbell approach: accumulate momentum tech, lean into BTC strength, back high-confidence playoff matchups, and cover Powerball hot streak.',
-    riskLevel: 'MEDIUM',
-    budget: BASE_BUDGET,
-    expectedReturn: TARGET_WINNINGS,
+    ...strategy,
+    segments,
+  };
+}
+
+function buildFallbackStrategy(budget: number, expectedReturn: number) {
+  const allocation = roundCurrency(budget * 0.45);
+  const fallbackReturn = roundCurrency(expectedReturn * 0.35);
+
+  return {
+    title: 'Adaptive Daily Playbook',
+    summary: 'Balanced diversification across core markets while monitoring volatility spikes.',
+    riskLevel: 'MEDIUM' as const,
+    budget,
+    expectedReturn,
     keyInsights: [
-      'Mega-cap tech leadership plus dovish Fed tone keeps equities constructive.',
-      'BTC inflows and positive on-chain momentum support upside continuation.',
-      'Playoff underdogs have strong ATS trends; target disciplined exposure.',
-      'Lottery wheel prioritises hot/cold balance with delta spacing.',
+      'Mega-cap tech resilience continues to anchor portfolios.',
+      'Crypto remains momentum-driven; size positions responsibly.',
+      'Focus betting units on quantifiable edges, avoid chasing longshots.',
     ],
-    bankrollTips:
-      'Stake only the illustrated $40 allocation today; recycle winnings, cap downside with stop-loss triggers on equities, and never chase losses across verticals.',
+    bankrollTips: "Allocate only today's cash designated for speculative strategies. Protect capital with stop losses and fixed unit sizing across sports wagers.",
     segments: [
       {
         category: 'Stocks',
-        allocation: 18,
-        expectedReturn: 13,
+        allocation,
+        expectedReturn: fallbackReturn,
         recommendations: [
           {
-            title: 'NVDA Momentum Booster',
-            action: 'BUY',
-            rationale: 'AI demand pipeline plus bullish earnings revisions and strong call-volume skew.',
-            confidence: 78,
-            stake: 10,
-            projectedReturn: 8,
-          },
-          {
-            title: 'SPY Call Debit Spread',
-            action: 'BULLISH SPREAD',
-            rationale: 'Seasonal strength + easing yields; defined risk via call spread.',
+            title: 'SPY Covered Call',
+            action: 'INCOME',
+            rationale: 'Harvest premium while index trades inside expected range.',
             confidence: 72,
-            stake: 8,
-            projectedReturn: 5,
+            stake: roundCurrency(allocation * 0.55),
+            projectedReturn: roundCurrency(fallbackReturn * 0.55),
           },
         ],
       },
       {
         category: 'Crypto',
-        allocation: 10,
-        expectedReturn: 8,
+        allocation: roundCurrency(budget * 0.25),
+        expectedReturn: roundCurrency(expectedReturn * 0.28),
         recommendations: [
           {
-            title: 'BTC Swing Position',
+            title: 'BTC Core Position',
             action: 'BUY',
-            rationale: 'ETF inflows + golden cross + on-chain accumulation.',
-            confidence: 75,
-            stake: 7,
-            projectedReturn: 6,
-          },
-          {
-            title: 'SOL Momentum punt',
-            action: 'BUY',
-            rationale: 'DeFi TVL surge + positive funding + breakout through resistance.',
-            confidence: 65,
-            stake: 3,
-            projectedReturn: 2,
+            rationale: 'Institutional accumulation and ETF demand underpin support.',
+            confidence: 76,
+            stake: roundCurrency(budget * 0.15),
+            projectedReturn: roundCurrency(expectedReturn * 0.18),
           },
         ],
       },
       {
         category: 'Sports',
-        allocation: 8,
-        expectedReturn: 6,
+        allocation: roundCurrency(budget * 0.18),
+        expectedReturn: roundCurrency(expectedReturn * 0.25),
         recommendations: [
           {
-            title: 'Chiefs -3.5 vs Bills',
+            title: 'NBA Pace Over',
             action: 'BET',
-            rationale: 'Mahomes ATS off bye + Bills injury list; line value to -4.5.',
-            confidence: 68,
-            stake: 4,
-            projectedReturn: 3,
-          },
-          {
-            title: 'Lakers vs Warriors Over 228.5',
-            action: 'BET',
-            rationale: 'Pace-up spot + rest advantage + Over cashes 7/9 meetings.',
-            confidence: 63,
-            stake: 4,
-            projectedReturn: 3,
+            rationale: 'Pace-up matchup with favourable shooting splits.',
+            confidence: 65,
+            stake: roundCurrency(budget * 0.08),
+            projectedReturn: roundCurrency(expectedReturn * 0.14),
           },
         ],
       },
       {
         category: 'Lottery',
-        allocation: 4,
-        expectedReturn: 3,
+        allocation: roundCurrency(budget * 0.12),
+        expectedReturn: roundCurrency(expectedReturn * 0.12),
         recommendations: [
           {
-            title: 'Powerball Delta Wheel',
+            title: 'Powerball Balanced Wheel',
             action: 'BUY TICKET',
-            rationale: 'AI-generated mix of hot & cold numbers optimised for 120-160 sum range.',
+            rationale: 'Hot/cold mix with delta spacing to maximise coverage.',
             confidence: 52,
-            stake: 4,
-            projectedReturn: 3,
+            stake: roundCurrency(budget * 0.12),
+            projectedReturn: roundCurrency(expectedReturn * 0.12),
           },
         ],
       },
     ],
-  };
+  } as z.infer<typeof strategySchema>;
 }
 
-function formatQuotesForPrompt(quotes: Record<string, RealTimeQuote>): string {
-  return Object.values(quotes)
-    .map((quote) => {
-      const change = quote.changePercent.toFixed(2);
-      const direction = quote.changePercent >= 0 ? '+' : '';
-      return `${quote.symbol}: $${quote.price.toFixed(2)} (${direction}${change}%)`;
-    })
-    .join('\n');
-}
-
-function formatNewsForPrompt(news: NewsArticle[]): string {
-  return news
-    .slice(0, 3)
-    .map((article) => `- ${article.title} [${article.sentiment}]`)
-    .join('\n');
-}
-
-function formatSportsLinesForPrompt(): string {
-  return SPORT_LINES.map((line) => `- ${line.event}: ${line.line} (confidence ${line.confidence}%)`).join('\n');
-}
-
-function normaliseStrategy(result: any): StrategyRecommendation {
-  const fallback = buildFallbackStrategy();
-
-  if (!result || typeof result !== 'object') {
-    return fallback;
-  }
-
-  const segments = Array.isArray(result.segments) ? result.segments : fallback.segments;
-  const sanitisedSegments = segments.map((segment: any) => ({
-    category: segment?.category ?? 'Unknown',
-    allocation: Number(segment?.allocation ?? 0),
-    expectedReturn: Number(segment?.expectedReturn ?? 0),
-    recommendations: Array.isArray(segment?.recommendations)
-      ? segment.recommendations.map((rec: any) => ({
-          title: rec?.title ?? 'Opportunity',
-          action: rec?.action ?? 'HOLD',
-          rationale: rec?.rationale ?? 'No rationale provided.',
-          confidence: Number(rec?.confidence ?? 0),
-          stake: Number(rec?.stake ?? 0),
-          projectedReturn: Number(rec?.projectedReturn ?? 0),
-        }))
-      : fallback.segments[0].recommendations,
-  }));
-
-  return {
-    title: result.title ?? fallback.title,
-    summary: result.summary ?? fallback.summary,
-    riskLevel: (result.riskLevel ?? fallback.riskLevel) as StrategyRecommendation['riskLevel'],
-    budget: Number(result.budget ?? BASE_BUDGET),
-    expectedReturn: Number(result.expectedReturn ?? TARGET_WINNINGS),
-    keyInsights: Array.isArray(result.keyInsights) ? result.keyInsights : fallback.keyInsights,
-    bankrollTips: result.bankrollTips ?? fallback.bankrollTips,
-    segments: sanitisedSegments,
-  };
-}
-
-export async function GET() {
-  const budget = BASE_BUDGET;
+export async function POST(request: Request) {
+  const raw = await request.json().catch(() => ({}));
+  const { budget, riskLevel, persona } = requestSchema.parse(raw ?? {});
 
   try {
-    const [quotes, news] = await Promise.all([
-      getQuotes([...STOCK_SYMBOLS, ...CRYPTO_SYMBOLS]),
-      getMarketNews(['financial_markets', 'crypto', 'sports_betting'], 5),
+    const [quotes, news, sports] = await Promise.all([
+      getQuotesSnapshot(),
+      getNewsSnapshot(),
+      getSportsSnapshot(),
     ]);
 
-    const prompt = `
-You are Stratford AI, a multi-market strategist.
+    const personaContext = personaPrompts[persona] ?? personaPrompts.balanced;
 
-Budget available today: $${budget}
-Desired winnings target: $${TARGET_WINNINGS}
+    const marketsSummary = formatQuoteSummary(quotes);
+    const newsSummary = formatNewsSummary(news);
+    const sportsSummary = formatSportsSummary(sports);
 
-Market snapshot:
-${formatQuotesForPrompt(quotes)}
+    const prompt = buildPrompt({
+      budget,
+      riskLevel,
+      personaContext,
+      marketsSummary,
+      newsSummary,
+      sportsSummary,
+    });
 
-Sports betting lines to evaluate:
-${formatSportsLinesForPrompt()}
-
-Top news drivers:
-${formatNewsForPrompt(news)}
-
-Return JSON with the following EXACT structure:
-{
-  "title": string,
-  "summary": string,
-  "riskLevel": "LOW" | "MEDIUM" | "HIGH",
-  "budget": number,
-  "expectedReturn": number,
-  "keyInsights": string[],
-  "bankrollTips": string,
-  "segments": [
-    {
-      "category": "Stocks" | "Crypto" | "Sports" | "Lottery",
-      "allocation": number,
-      "expectedReturn": number,
-      "recommendations": [
-        {
-          "title": string,
-          "action": string,
-          "rationale": string,
-          "confidence": number,
-          "stake": number,
-          "projectedReturn": number
-        }
-      ]
-    }
-  ]
-}
-
-Constraints:
-- Total allocation must equal ${budget}.
-- Total expectedReturn across segments should approximate ${TARGET_WINNINGS}.
-- Recommendations must be concrete, time-boxed for today, and data-driven referencing the supplied context.
-- Confidence is 0-100.
-- Monetary fields (allocation, stake, expectedReturn, projectedReturn) must be numbers (no currency symbols).
-- Provide exactly four segments: Stocks, Crypto, Sports, Lottery.
-`.trim();
-
-    let strategy = buildFallbackStrategy();
+    let parsedStrategy: z.infer<typeof strategySchema> | null = null;
 
     try {
       const aiResponse = await chat({
         userMessage: prompt,
-        context:
-          'You are a deterministic quantitative strategist. Reply ONLY in strict JSON matching the requested schema. Do not include any surrounding text.',
+        context: 'You are Stratford AI, a deterministic strategy engine. Respond using the requested JSON schema only.',
       });
-      const parsed = JSON.parse(aiResponse);
-      strategy = normaliseStrategy(parsed);
+      const json = JSON.parse(aiResponse);
+      parsedStrategy = strategySchema.parse(json);
     } catch (error) {
-      console.error('Failed to parse AI strategy response:', error);
+      console.error('[Strategy API] Failed to parse AI response:', error);
     }
+
+    const strategy = ensureAllocations(
+      parsedStrategy ?? buildFallbackStrategy(budget, roundCurrency(budget * 0.75))
+    );
+
+    const sources = {
+      markets: {
+        provider: 'Alpha Vantage',
+        symbols: [...STOCK_SYMBOLS, ...CRYPTO_SYMBOLS],
+        lastUpdated: new Date().toISOString(),
+      },
+      news: {
+        provider: 'Alpha Vantage News & Sentiment',
+        topics: ['financial_markets', 'crypto', 'sports_betting'],
+        lastUpdated: new Date().toISOString(),
+      },
+      sports: {
+        provider: 'ESPN Scoreboard + Internal Predictor',
+        leagues: SPORTS_LEAGUES,
+        lastUpdated: new Date().toISOString(),
+      },
+      ai: {
+        provider: 'OpenAI gpt-4o-mini',
+        persona,
+        riskLevel,
+      },
+    };
 
     return NextResponse.json({
       strategy,
-      budget,
       news: news.slice(0, 5),
-      quotes,
-      sports: SPORT_LINES,
+      sports,
       generatedAt: new Date().toISOString(),
+      sources,
     });
   } catch (error) {
-    console.error('[Strategy API] error generating plan:', error);
-    const fallback = buildFallbackStrategy();
-
+    console.error('[Strategy API] unexpected error:', error);
     return NextResponse.json(
       {
-        strategy: fallback,
-        budget,
+        strategy: buildFallbackStrategy(budget, roundCurrency(budget * 0.75)),
         news: [],
-        quotes: {},
-        sports: SPORT_LINES,
+        sports: [],
         generatedAt: new Date().toISOString(),
-        error: 'Failed to generate live strategy. Using fallback playbook.',
+        sources: null,
+        error: 'Live data unavailable. Showing fallback playbook.',
       },
       { status: 200 }
     );
   }
+}
+
+const JSON_SCHEMA_HINT = [
+  '{',
+  '  "title": string,',
+  '  "summary": string,',
+  '  "riskLevel": "LOW" | "MEDIUM" | "HIGH",',
+  '  "budget": number,',
+  '  "expectedReturn": number,',
+  '  "keyInsights": string[],',
+  '  "bankrollTips": string,',
+  '  "segments": [',
+  '    {',
+  '      "category": "Stocks" | "Crypto" | "Sports" | "Lottery",',
+  '      "allocation": number,',
+  '      "expectedReturn": number,',
+  '      "recommendations": [',
+  '        {',
+  '          "title": string,',
+  '          "action": string,',
+  '          "rationale": string,',
+  '          "confidence": number,',
+  '          "stake": number,',
+  '          "projectedReturn": number',
+  '        }',
+  '      ]',
+  '    }',
+  '  ]',
+  '}',
+].join('\n');
+
+function buildPrompt({
+  budget,
+  riskLevel,
+  personaContext,
+  marketsSummary,
+  newsSummary,
+  sportsSummary,
+}: {
+  budget: number;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  personaContext: string;
+  marketsSummary: string;
+  newsSummary: string;
+  sportsSummary: string;
+}) {
+  return `You are Stratford AI, an elite multi-market strategist.
+
+Bankroll available today: $${budget}
+Target winnings: ${roundCurrency(budget * 0.75)}
+Risk tolerance: ${riskLevel}
+Persona guidance: ${personaContext}
+
+Market snapshot:
+${marketsSummary}
+
+Sports intelligence:
+${sportsSummary}
+
+Top news drivers:
+${newsSummary}
+
+Produce JSON matching this schema:
+${JSON_SCHEMA_HINT}
+
+Rules:
+- Total allocation must equal ${budget}.
+- Focus on four segments: Stocks, Crypto, Sports, Lottery.
+- Recommendations must be concrete actions executable today.
+- Stakes within a segment must sum to the segment allocation.
+- Projected returns should align with expectedReturn.
+- Offer actionable insights and bankroll discipline.
+- Confidence is 0-100.
+`.trim();
+}
+
+function formatQuoteSummary(quotes: Record<string, RealTimeQuote>): string {
+  return Object.values(quotes)
+    .map((quote) => {
+      const change = quote.changePercent.toFixed(2);
+      const direction = quote.changePercent >= 0 ? '+' : '';
+      return `${quote.symbol}: $${quote.price.toFixed(2)} (${direction}${change}% | vol ${quote.volume})`;
+    })
+    .join('\n');
+}
+
+function formatNewsSummary(news: NewsArticle[]): string {
+  if (!news.length) {
+    return 'No fresh headlines.';
+  }
+  return news
+    .slice(0, 5)
+    .map((article) => `- ${article.title} [${article.sentiment ?? 'neutral'}]`)
+    .join('\n');
+}
+
+function formatSportsSummary(sports: SportsLine[]): string {
+  if (!sports.length) {
+    return 'No confident sports edges.';
+  }
+  return sports
+    .map((line) => `- ${line.league}: ${line.event} | ${line.line} (confidence ${line.confidence}%)`)
+    .join('\n');
 }
