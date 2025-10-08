@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatCurrency, formatPercentage } from '@/lib/utils';
+import { formatCurrency, formatPercentage, cn } from '@/lib/utils';
 import {
   RefreshCw,
   TrendingUp,
@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   Newspaper,
   History,
+  ListChecks,
 } from 'lucide-react';
 
 const categoryIconMap: Record<string, React.ComponentType<any>> = {
@@ -175,6 +176,42 @@ export default function StrategyPage() {
 
   const roi = strategy ? (strategy.expectedReturn / strategy.budget) * 100 : 0;
 
+  const highlights = useMemo(() => {
+    if (!strategy) return [] as Array<{
+      category: string;
+      title: string;
+      action: string;
+      rationale: string;
+      stake: number;
+      projectedReturn: number;
+      confidence: number;
+    }>;
+
+    return strategy.segments
+      .map((segment) => {
+        const primary = segment.recommendations[0];
+        if (!primary) return null;
+        return {
+          category: segment.category,
+          title: primary.title,
+          action: primary.action,
+          rationale: primary.rationale,
+          stake: primary.stake,
+          projectedReturn: primary.projectedReturn,
+          confidence: primary.confidence,
+        };
+      })
+      .filter(Boolean) as Array<{
+        category: string;
+        title: string;
+        action: string;
+        rationale: string;
+        stake: number;
+        projectedReturn: number;
+        confidence: number;
+      }>;
+  }, [strategy]);
+
   const handleBudgetChange = (value: number) => {
     const clamped = Number.isFinite(value) ? Math.min(1000, Math.max(10, value)) : DEFAULT_FORM.budget;
     setForm((prev) => ({ ...prev, budget: clamped }));
@@ -270,9 +307,12 @@ export default function StrategyPage() {
                     {bankrollPresets.map((preset) => (
                       <Button
                         key={preset}
-                        variant={form.budget === preset ? 'default' : 'outline'}
+                        variant="outline"
                         size="sm"
-                        className="text-xs"
+                        className={cn(
+                          'text-xs transition',
+                          form.budget === preset && 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
+                        )}
                         onClick={() => handleBudgetChange(preset)}
                       >
                         {formatCurrency(preset)}
@@ -304,15 +344,26 @@ export default function StrategyPage() {
                     {riskOptions.map((option) => (
                       <Button
                         key={option.value}
-                        variant={form.riskLevel === option.value ? 'default' : 'outline'}
-                        className="flex items-center justify-between gap-4 px-3 py-3"
+                        variant="outline"
+                        className={cn(
+                          'flex items-center justify-between gap-4 px-3 py-3 transition',
+                          form.riskLevel === option.value
+                            ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
+                            : 'hover:bg-muted'
+                        )}
                         onClick={() => setForm((prev) => ({ ...prev, riskLevel: option.value }))}
                       >
                         <div className="flex flex-col items-start gap-1">
                           <span className="text-sm font-semibold">{option.label}</span>
                           <span className="text-[11px] text-muted-foreground">{option.description}</span>
                         </div>
-                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            'text-[10px] uppercase tracking-wide',
+                            form.riskLevel === option.value && 'bg-primary/15 text-primary'
+                          )}
+                        >
                           {form.riskLevel === option.value ? 'Selected' : 'Choose'}
                         </Badge>
                       </Button>
@@ -328,14 +379,25 @@ export default function StrategyPage() {
                     {personaOptions.map((option) => (
                       <Button
                         key={option.value}
-                        variant={form.persona === option.value ? 'default' : 'outline'}
-                        className="w-full flex items-start gap-3 text-left"
+                        variant="outline"
+                        className={cn(
+                          'w-full flex items-start gap-3 text-left transition',
+                          form.persona === option.value
+                            ? 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
+                            : 'hover:bg-muted'
+                        )}
                         onClick={() => setForm((prev) => ({ ...prev, persona: option.value }))}
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold">{option.label}</span>
-                            <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                'text-[10px] uppercase tracking-wide',
+                                form.persona === option.value && 'bg-primary/15 text-primary'
+                              )}
+                            >
                               {option.badge}
                             </Badge>
                           </div>
@@ -395,13 +457,49 @@ export default function StrategyPage() {
                     )}`}
                     accent="text-green-600"
                   />
-                  <SummaryCard
-                    title="ROI"
-                    value={formatPercentage(roi)}
-                    subtitle="Expected aggregate return relative to bankroll"
-                  />
-                  <RiskCard riskLevel={strategy.riskLevel} summary={strategy.summary} generatedAt={data?.generatedAt} />
-                </div>
+                <SummaryCard
+                  title="ROI"
+                  value={formatPercentage(roi)}
+                  subtitle="Expected aggregate return relative to bankroll"
+                />
+                <RiskCard riskLevel={strategy.riskLevel} summary={strategy.summary} generatedAt={data?.generatedAt} />
+              </div>
+
+                {highlights.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <ListChecks className="h-4 w-4 text-primary" />
+                        Today&rsquo;s Picks
+                      </CardTitle>
+                      <CardDescription>
+                        Headline actions per market: what to trade, where to wager, and which numbers to play.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-3 md:grid-cols-2">
+                      {highlights.map((item) => (
+                        <div key={`${item.category}-${item.title}`} className="rounded-lg border p-3 bg-muted/40">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold">{item.category}</span>
+                            <Badge variant="secondary">{item.confidence}%</Badge>
+                          </div>
+                          <p className="text-sm mt-1 font-medium">{item.title}</p>
+                          <p className="text-xs text-muted-foreground leading-snug mt-1">{item.rationale}</p>
+                          <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground mt-3">
+                            <span>
+                              Stake<br />
+                              <strong>{formatCurrency(item.stake)}</strong>
+                            </span>
+                            <span>
+                              Target<br />
+                              <strong>{formatCurrency(item.projectedReturn)}</strong>
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
 
                 <Card>
                   <CardHeader>
