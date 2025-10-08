@@ -114,6 +114,15 @@ type StrategyResponse = {
   strategy: StrategyPlan;
   news: NewsArticle[];
   sports: SportsEdge[];
+  lottery: Array<{
+    game: string;
+    numbers: number[];
+    specialLabel?: string;
+    specialNumber?: number;
+    jackpot: string;
+    confidence: number;
+    strategy: string;
+  }>;
   generatedAt: string;
   sources: StrategySources;
   error?: string;
@@ -177,40 +186,70 @@ export default function StrategyPage() {
   const roi = strategy ? (strategy.expectedReturn / strategy.budget) * 100 : 0;
 
   const highlights = useMemo(() => {
-    if (!strategy) return [] as Array<{
+    const picks: Array<{
       category: string;
       title: string;
       action: string;
       rationale: string;
-      stake: number;
-      projectedReturn: number;
-      confidence: number;
-    }>;
+      confidence?: number;
+      stake?: number;
+      projected?: number;
+      meta?: Array<{ label: string; value: string }>;
+      chips?: string[];
+    }> = [];
 
-    return strategy.segments
-      .map((segment) => {
+    if (strategy) {
+      strategy.segments.forEach((segment) => {
+        if (!segment.recommendations.length) return;
+        if (!['Stocks', 'Crypto'].includes(segment.category)) return;
+
         const primary = segment.recommendations[0];
-        if (!primary) return null;
-        return {
+        picks.push({
           category: segment.category,
           title: primary.title,
           action: primary.action,
           rationale: primary.rationale,
-          stake: primary.stake,
-          projectedReturn: primary.projectedReturn,
           confidence: primary.confidence,
-        };
-      })
-      .filter(Boolean) as Array<{
-        category: string;
-        title: string;
-        action: string;
-        rationale: string;
-        stake: number;
-        projectedReturn: number;
-        confidence: number;
-      }>;
-  }, [strategy]);
+          stake: primary.stake,
+          projected: primary.projectedReturn,
+        });
+      });
+    }
+
+    if (data?.sports?.length) {
+      const sortedSports = [...data.sports].sort((a, b) => b.confidence - a.confidence);
+      const topSport = sortedSports[0];
+      picks.push({
+        category: 'Sports',
+        title: topSport.event,
+        action: topSport.line,
+        rationale: topSport.notes?.join(' · ') ?? 'Edge detected by sports predictor.',
+        confidence: topSport.confidence,
+        meta: [
+          { label: 'League', value: topSport.league },
+          { label: 'Kickoff', value: new Date(topSport.kickoff).toLocaleString() },
+        ],
+      });
+    }
+
+    if (data?.lottery?.length) {
+      const primary = data.lottery[0];
+      const chips = [...primary.numbers.map((num) => num.toString())];
+      if (primary.specialNumber !== undefined) {
+        chips.push(`${primary.specialLabel ?? 'Bonus'} ${primary.specialNumber}`);
+      }
+      picks.push({
+        category: 'Lottery',
+        title: primary.game,
+        action: `${primary.strategy}`,
+        rationale: `Jackpot ${primary.jackpot}`,
+        confidence: primary.confidence,
+        chips,
+      });
+    }
+
+    return picks;
+  }, [strategy, data?.sports, data?.lottery]);
 
   const handleBudgetChange = (value: number) => {
     const clamped = Number.isFinite(value) ? Math.min(1000, Math.max(10, value)) : DEFAULT_FORM.budget;
@@ -478,23 +517,53 @@ export default function StrategyPage() {
                     </CardHeader>
                     <CardContent className="grid gap-3 md:grid-cols-2">
                       {highlights.map((item) => (
-                        <div key={`${item.category}-${item.title}`} className="rounded-lg border p-3 bg-muted/40">
+                        <div key={`${item.category}-${item.title}`} className="rounded-lg border p-3 bg-muted/40 space-y-3">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-semibold">{item.category}</span>
-                            <Badge variant="secondary">{item.confidence}%</Badge>
+                            {item.confidence !== undefined && (
+                              <Badge variant="secondary">{item.confidence}%</Badge>
+                            )}
                           </div>
-                          <p className="text-sm mt-1 font-medium">{item.title}</p>
-                          <p className="text-xs text-muted-foreground leading-snug mt-1">{item.rationale}</p>
-                          <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground mt-3">
-                            <span>
-                              Stake<br />
-                              <strong>{formatCurrency(item.stake)}</strong>
-                            </span>
-                            <span>
-                              Target<br />
-                              <strong>{formatCurrency(item.projectedReturn)}</strong>
-                            </span>
+                          <div>
+                            <p className="text-sm font-medium leading-snug">{item.title}</p>
+                            <p className="text-xs uppercase text-muted-foreground tracking-wide">{item.action}</p>
                           </div>
+                          <p className="text-xs text-muted-foreground leading-snug">{item.rationale}</p>
+                          {item.meta && item.meta.length > 0 && (
+                            <div className="grid gap-2 text-[11px] text-muted-foreground md:grid-cols-2">
+                              {item.meta.map((meta) => (
+                                <span key={`${item.category}-${meta.label}`}>
+                                  {meta.label}<br />
+                                  <strong>{meta.value}</strong>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {(item.stake !== undefined || item.projected !== undefined) && (
+                            <div className="grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                              {item.stake !== undefined && (
+                                <span>
+                                  Stake<br />
+                                  <strong>{formatCurrency(item.stake)}</strong>
+                                </span>
+                              )}
+                              {item.projected !== undefined && (
+                                <span>
+                                  Target<br />
+                                  <strong>{formatCurrency(item.projected)}</strong>
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {item.chips && item.chips.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {item.chips.map((chip, idx) => (
+                                <Badge key={`${item.category}-chip-${idx}`} variant="outline" className="text-[11px]">
+                                  {chip}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </CardContent>

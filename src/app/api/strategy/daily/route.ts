@@ -5,6 +5,7 @@ import { getMarketNews } from '@/lib/server/news';
 import { chat } from '@/lib/server/openai';
 import { getSportsDataService } from '@/lib/services/sports-data';
 import { getSportsPredictor } from '@/lib/services/sports-predictor';
+import { getLotteryAnalyzer } from '@/lib/services/lottery-analyzer';
 import type { RealTimeQuote } from '@/lib/services/real-market-data';
 import type { NewsArticle } from '@/types/news';
 
@@ -23,6 +24,7 @@ const SPORTS_LEAGUES = ['NFL', 'NBA', 'MLB', 'NHL'];
 
 const sportsDataService = getSportsDataService();
 const sportsPredictor = getSportsPredictor();
+const lotteryAnalyzer = getLotteryAnalyzer();
 
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
@@ -34,6 +36,7 @@ interface Cached<T> {
 let quotesCache: Cached<Record<string, RealTimeQuote>> | null = null;
 let newsCache: Cached<NewsArticle[]> | null = null;
 let sportsCache: Cached<SportsLine[]> | null = null;
+let lotteryCache: Cached<Awaited<ReturnType<typeof buildLotteryPicks>>> | null = null;
 
 const strategySchema = z.object({
   title: z.string(),
@@ -133,6 +136,41 @@ async function getSportsSnapshot(): Promise<SportsLine[]> {
   const lines = await buildSportsLines();
   sportsCache = { data: lines, timestamp: Date.now() };
   return lines;
+}
+
+async function buildLotteryPicks() {
+  const powerball = lotteryAnalyzer.generatePowerballPrediction();
+  const mega = lotteryAnalyzer.generateMegaMillionsPrediction();
+
+  return [
+    {
+      game: 'Powerball',
+      numbers: powerball.numbers,
+      specialLabel: 'Powerball',
+      specialNumber: powerball.powerball,
+      jackpot: powerball.jackpot,
+      confidence: powerball.confidence,
+      strategy: powerball.strategy,
+    },
+    {
+      game: 'Mega Millions',
+      numbers: mega.numbers,
+      specialLabel: 'Mega Ball',
+      specialNumber: mega.megaBall,
+      jackpot: mega.jackpot,
+      confidence: mega.confidence,
+      strategy: mega.strategy,
+    },
+  ];
+}
+
+async function getLotterySnapshot() {
+  if (lotteryCache && Date.now() - lotteryCache.timestamp < CACHE_TTL) {
+    return lotteryCache.data;
+  }
+  const picks = await buildLotteryPicks();
+  lotteryCache = { data: picks, timestamp: Date.now() };
+  return picks;
 }
 
 function ensureAllocations(strategy: z.infer<typeof strategySchema>) {
@@ -263,10 +301,11 @@ export async function POST(request: Request) {
   const { budget, riskLevel, persona } = requestSchema.parse(raw ?? {});
 
   try {
-    const [quotes, news, sports] = await Promise.all([
+    const [quotes, news, sports, lottery] = await Promise.all([
       getQuotesSnapshot(),
       getNewsSnapshot(),
       getSportsSnapshot(),
+      getLotterySnapshot(),
     ]);
 
     const personaContext = personaPrompts[persona] ?? personaPrompts.balanced;
@@ -328,6 +367,7 @@ export async function POST(request: Request) {
       strategy,
       news: news.slice(0, 5),
       sports,
+      lottery,
       generatedAt: new Date().toISOString(),
       sources,
     });
@@ -338,6 +378,7 @@ export async function POST(request: Request) {
         strategy: buildFallbackStrategy(budget, roundCurrency(budget * 0.75)),
         news: [],
         sports: [],
+        lottery: [],
         generatedAt: new Date().toISOString(),
         sources: null,
         error: 'Live data unavailable. Showing fallback playbook.',
