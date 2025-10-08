@@ -4,7 +4,7 @@ import { ReactNode, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Settings, BarChart3, Activity, TrendingUp, Database, Shield, Zap, Target, Dice1, Bitcoin } from 'lucide-react';
+import { Settings, BarChart3, Activity, TrendingUp, Database, Shield, Zap, Target, Dice1, Bitcoin, Lightbulb } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -13,6 +13,7 @@ interface DashboardLayoutProps {
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: BarChart3, description: 'Financial Overview' },
+  { href: '/strategy/', label: 'Strategy', icon: Lightbulb, description: 'Daily Multi-Market Plan' },
   { href: '/trading/', label: 'Stocks', icon: TrendingUp, description: 'Stock Trading' },
   { href: '/crypto/', label: 'Crypto', icon: Bitcoin, description: 'Cryptocurrency' },
   { href: '/lottery/', label: 'Lottery', icon: Target, description: 'Number Analytics' },
