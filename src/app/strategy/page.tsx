@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import {
   RefreshCw,
@@ -37,10 +38,27 @@ const riskOptions = [
 ] as const;
 
 const personaOptions = [
-  { value: 'conservative', label: 'Conservative', badge: 'Safe' },
-  { value: 'balanced', label: 'Balanced', badge: 'Core' },
-  { value: 'aggressive', label: 'Aggressive', badge: 'Alpha' },
+  {
+    value: 'conservative',
+    label: 'Conservative',
+    badge: 'Safe',
+    helper: 'Income focus, hedged exposure, low volatility baskets.',
+  },
+  {
+    value: 'balanced',
+    label: 'Balanced',
+    badge: 'Core',
+    helper: 'Blend of growth equities, crypto momentum, disciplined wagers.',
+  },
+  {
+    value: 'aggressive',
+    label: 'Aggressive',
+    badge: 'Alpha',
+    helper: 'Leverage asymmetric upside, tolerate swings, chase edges.',
+  },
 ] as const;
+
+const bankrollPresets = [40, 75, 150, 250, 500] as const;
 
 type StrategySegment = {
   category: string;
@@ -158,7 +176,8 @@ export default function StrategyPage() {
   const roi = strategy ? (strategy.expectedReturn / strategy.budget) * 100 : 0;
 
   const handleBudgetChange = (value: number) => {
-    setForm((prev) => ({ ...prev, budget: Math.min(1000, Math.max(10, value)) }));
+    const clamped = Number.isFinite(value) ? Math.min(1000, Math.max(10, value)) : DEFAULT_FORM.budget;
+    setForm((prev) => ({ ...prev, budget: clamped }));
   };
 
   const handleGenerate = () => {
@@ -226,89 +245,124 @@ export default function StrategyPage() {
           </p>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[320px_1fr]">
+        <section className="grid gap-6 lg:grid-cols-[360px_1fr]">
           <Card className="h-full">
             <CardHeader className="space-y-4">
               <CardTitle>Strategy Controls</CardTitle>
               <CardDescription>Set bankroll, risk posture, and persona before generating.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Bankroll</span>
-                  <span>{formatCurrency(form.budget)}</span>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase text-muted-foreground">Bankroll</Label>
+                  <div className="flex items-center justify-between text-sm font-medium">
+                    <span>Capital deployed</span>
+                    <span>{formatCurrency(form.budget)}</span>
+                  </div>
+                  <Slider
+                    value={[form.budget]}
+                    min={10}
+                    max={1000}
+                    step={5}
+                    onValueChange={(value) => handleBudgetChange(value[0])}
+                  />
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {bankrollPresets.map((preset) => (
+                      <Button
+                        key={preset}
+                        variant={form.budget === preset ? 'default' : 'outline'}
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => handleBudgetChange(preset)}
+                      >
+                        {formatCurrency(preset)}
+                      </Button>
+                    ))}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={10}
+                        max={1000}
+                        value={form.budget}
+                        onChange={(event) => handleBudgetChange(Number(event.target.value))}
+                        className="h-9 w-28"
+                      />
+                      <span className="text-[11px] text-muted-foreground">Min 10 · Max 1000</span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Allocate only discretionary funds. The engine targets roughly 75% ROI of the bankroll across all
+                    verticals.
+                  </p>
                 </div>
-                <Slider
-                  value={[form.budget]}
-                  min={10}
-                  max={1000}
-                  step={5}
-                  onValueChange={(value) => handleBudgetChange(value[0])}
-                />
-                <Input
-                  type="number"
-                  min={10}
-                  max={1000}
-                  value={form.budget}
-                  onChange={(event) => handleBudgetChange(Number(event.target.value))}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Distribute only disposable capital. Strategy targets roughly 75% ROI of the bankroll.
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <div className="text-xs text-muted-foreground">Risk tolerance</div>
-                <div className="grid grid-cols-3 gap-2">
-                  {riskOptions.map((option) => (
-                    <Button
-                      key={option.value}
-                      variant={form.riskLevel === option.value ? 'default' : 'outline'}
-                      className="flex flex-col gap-1 py-3"
-                      onClick={() => setForm((prev) => ({ ...prev, riskLevel: option.value }))}
-                    >
-                      <span className="text-sm font-semibold">{option.label}</span>
-                      <span className="text-[10px] text-muted-foreground text-center leading-tight">
-                        {option.description}
-                      </span>
-                    </Button>
-                  ))}
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase text-muted-foreground">Risk tolerance</Label>
+                  <div className="grid gap-2">
+                    {riskOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        variant={form.riskLevel === option.value ? 'default' : 'outline'}
+                        className="flex items-center justify-between gap-4 px-3 py-3"
+                        onClick={() => setForm((prev) => ({ ...prev, riskLevel: option.value }))}
+                      >
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="text-sm font-semibold">{option.label}</span>
+                          <span className="text-[11px] text-muted-foreground">{option.description}</span>
+                        </div>
+                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                          {form.riskLevel === option.value ? 'Selected' : 'Choose'}
+                        </Badge>
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <div className="text-xs text-muted-foreground">Persona</div>
-                <div className="grid grid-cols-3 gap-2">
-                  {personaOptions.map((option) => (
-                    <Button
-                      key={option.value}
-                      variant={form.persona === option.value ? 'default' : 'outline'}
-                      className="flex items-center justify-between gap-2"
-                      onClick={() => setForm((prev) => ({ ...prev, persona: option.value }))}
-                    >
-                      <span className="text-sm font-semibold">{option.label}</span>
-                      <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
-                        {option.badge}
-                      </Badge>
-                    </Button>
-                  ))}
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase text-muted-foreground">Persona lens</Label>
+                  <div className="space-y-2">
+                    {personaOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        variant={form.persona === option.value ? 'default' : 'outline'}
+                        className="w-full flex items-start gap-3 text-left"
+                        onClick={() => setForm((prev) => ({ ...prev, persona: option.value }))}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold">{option.label}</span>
+                            <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                              {option.badge}
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-snug mt-1">{option.helper}</p>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <Button onClick={handleGenerate} className="w-full" disabled={loading}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                {loading ? 'Generating' : 'Generate Strategy'}
-              </Button>
+                <Separator />
 
-              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-[11px] text-yellow-900">
-                <div className="flex items-center gap-2 font-semibold">
-                  <AlertTriangle className="h-3 w-3" />
-                  Educational Use Only
+                <Button onClick={handleGenerate} className="w-full" disabled={loading}>
+                  <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  {loading ? 'Generating' : 'Generate Strategy'}
+                </Button>
+
+                <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-[11px] text-yellow-900">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <AlertTriangle className="h-3 w-3" />
+                    Educational Use Only
+                  </div>
+                  <p className="mt-1">
+                    Not financial or gambling advice. Verify data with your broker or sportsbook. Wager responsibly and
+                    follow local regulations.
+                  </p>
                 </div>
-                <p className="mt-1">
-                  Not financial or gambling advice. Verify data with your broker or sportsbook. Wager responsibly and
-                  follow local regulations.
-                </p>
               </div>
             </CardContent>
           </Card>
