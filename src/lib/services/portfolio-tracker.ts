@@ -1,7 +1,7 @@
 /**
- * Portfolio Tracker Service
- * Tracks stock positions with real-time prices from Alpha Vantage
- * Supports syncing with Robinhood for live trading data
+ * Signal Tracker Service (formerly Portfolio Tracker)
+ * Tracks the performance of AI-generated wealth opportunities (Signals).
+ * Connects to real market data to verify if predictions are winning or losing.
  */
 
 import { getRealMarketDataService, type RealTimeQuote } from './real-market-data';
@@ -20,10 +20,10 @@ if (typeof window === 'undefined') {
 export interface Position {
   symbol: string;
   name: string;
-  shares: number;
-  costBasis: number; // Average purchase price per share
-  purchaseDate: string;
-  sector?: string;
+  shares: number; // Used as 'Contract Size' or 'Units'
+  costBasis: number; // Used as 'Entry Price' or 'Odds'
+  purchaseDate: string; // 'Signal Date'
+  sector?: string; // 'Signal Type' (e.g., Long, Short, Bet)
 }
 
 export interface PortfolioHolding extends Position {
@@ -34,18 +34,18 @@ export interface PortfolioHolding extends Position {
   gainLossPercent: number;
   dayChange: number;
   dayChangePercent: number;
-  allocation: number; // Will be calculated
+  allocation: number; // Confidence Score
 }
 
 export interface PortfolioSummary {
-  totalValue: number;
-  totalCost: number;
+  totalValue: number; // Total 'Tracked Opportunity' Value
+  totalCost: number; // Total Capital Deployed/Risked
   totalGainLoss: number;
   totalGainLossPercent: number;
   dayChange: number;
   dayChangePercent: number;
-  holdings: PortfolioHolding[];
-  diversificationScore: number;
+  holdings: PortfolioHolding[]; // Active Signals
+  diversificationScore: number; // Win Rate or Confidence
   topGainer: PortfolioHolding | null;
   topLoser: PortfolioHolding | null;
 }
@@ -59,214 +59,135 @@ class PortfolioTracker {
   }
 
   /**
-   * Initialize portfolio positions from localStorage or demo data
+   * Initialize signals from localStorage (Execution Log) or demo data
    */
   private initializePositions() {
-    // Try to load from localStorage first (manual portfolio management)
+    // Try to load from localStorage first (Log Execution page)
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('manual_portfolio');
+      const saved = localStorage.getItem('execution_log'); // CHANGED: Now reading from execution_log
       if (saved) {
         try {
           const manual = JSON.parse(saved);
           this.positions = manual.map((p: any) => ({
-            symbol: p.symbol,
-            name: p.symbol,
-            shares: p.shares,
-            costBasis: p.costBasis,
-            purchaseDate: p.purchaseDate,
-            sector: undefined,
+            symbol: p.asset,
+            name: p.type === 'BET' ? 'Sports/Event Wager' : `${p.type} Position`,
+            shares: p.capital / p.entryPrice, // Derive 'units' from capital
+            costBasis: p.entryPrice,
+            purchaseDate: p.date,
+            sector: p.type, // Store the type (LONG/SHORT/BET) here
           }));
-          console.log(`Loaded ${this.positions.length} positions from manual portfolio`);
+          console.log(`Loaded ${this.positions.length} signals from execution log`);
           return;
         } catch (error) {
-          console.error('Error loading manual portfolio:', error);
+          console.error('Error loading execution log:', error);
         }
       }
     }
 
-    // Fall back to demo positions
+    // Fall back to demo SIGNALS (not portfolio holdings)
     this.positions = [
       {
-        symbol: 'AAPL',
-        name: 'Apple Inc.',
-        shares: 50,
-        costBasis: 175.50,
-        purchaseDate: '2024-01-15',
-        sector: 'Technology',
-      },
-      {
-        symbol: 'MSFT',
-        name: 'Microsoft Corporation',
-        shares: 40,
-        costBasis: 380.25,
-        purchaseDate: '2024-02-20',
-        sector: 'Technology',
-      },
-      {
-        symbol: 'GOOGL',
-        name: 'Alphabet Inc.',
-        shares: 30,
-        costBasis: 145.75,
-        purchaseDate: '2024-03-10',
-        sector: 'Technology',
+        symbol: 'NVDA',
+        name: 'AI Momentum Breakout',
+        shares: 10, // Simulated units
+        costBasis: 480.00, // Signal Entry
+        purchaseDate: '2024-06-15',
+        sector: 'LONG',
       },
       {
         symbol: 'TSLA',
-        name: 'Tesla Inc.',
-        shares: 25,
-        costBasis: 245.00,
-        purchaseDate: '2024-01-25',
-        sector: 'Automotive',
-      },
-      {
-        symbol: 'NVDA',
-        name: 'NVIDIA Corporation',
-        shares: 20,
-        costBasis: 520.00,
-        purchaseDate: '2024-04-05',
-        sector: 'Technology',
-      },
-      {
-        symbol: 'META',
-        name: 'Meta Platforms Inc.',
+        name: 'Overvaluation Mean Reversion',
         shares: 15,
-        costBasis: 385.00,
-        purchaseDate: '2024-05-12',
-        sector: 'Technology',
+        costBasis: 260.00,
+        purchaseDate: '2024-06-18',
+        sector: 'SHORT',
       },
       {
-        symbol: 'BRK.B',
-        name: 'Berkshire Hathaway Inc.',
-        shares: 10,
-        costBasis: 425.00,
-        purchaseDate: '2024-06-01',
-        sector: 'Financial',
+        symbol: 'AMD',
+        name: 'Semi-Conductor Swing',
+        shares: 20,
+        costBasis: 115.50,
+        purchaseDate: '2024-06-20',
+        sector: 'LONG',
+      },
+      {
+        symbol: 'GME',
+        name: 'Volatility Arb',
+        shares: 100,
+        costBasis: 22.50,
+        purchaseDate: '2024-06-21',
+        sector: 'LONG',
+      },
+      {
+        symbol: 'COIN',
+        name: 'Crypto Correlation',
+        shares: 15,
+        costBasis: 145.00,
+        purchaseDate: '2024-06-19',
+        sector: 'SHORT',
       },
     ];
   }
 
-  /**
-   * Sync portfolio from E*TRADE (if configured)
-   * Uses API route for server-side E*TRADE integration with OAuth
-   */
-  async syncFromETrade(): Promise<boolean> {
-    try {
-      console.log('Syncing portfolio from E*TRADE via API...');
-
-      const response = await fetch('/api/etrade/portfolio');
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.log('E*TRADE sync failed:', data.error || data.message);
-        return false;
-      }
-
-      if (!data.success || !data.positions) {
-        console.log('No E*TRADE positions returned');
-        return false;
-      }
-
-      // Convert E*TRADE API response to our Position format
-      this.positions = data.positions.map((pos: any) => ({
-        symbol: pos.symbol,
-        name: pos.name || pos.symbol,
-        shares: pos.shares,
-        costBasis: pos.costBasis,
-        purchaseDate: new Date().toISOString().split('T')[0],
-        sector: undefined,
-      }));
-
-      console.log(`Successfully synced ${this.positions.length} positions from E*TRADE`);
-      return true;
-    } catch (error) {
-      console.error('Failed to sync from E*TRADE:', error);
-      return false;
-    }
-  }
+  // ... (E*Trade/Robinhood sync methods removed or deprecated for now as they are for asset mgmt)
+  async syncFromETrade(): Promise<boolean> { return false; }
+  async syncFromRobinhood(): Promise<boolean> { return false; }
 
   /**
-   * Sync portfolio from Robinhood (if configured)
-   * Uses API route for server-side Robinhood integration
-   * @deprecated Use syncFromETrade() for official API support
+   * Get signal performance summary with real-time data
    */
-  async syncFromRobinhood(): Promise<boolean> {
-    try {
-      console.log('Syncing portfolio from Robinhood via API...');
-
-      const response = await fetch('/api/portfolio/sync');
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.log('Robinhood sync failed:', data.error || data.message);
-        return false;
-      }
-
-      if (!data.success || !data.positions) {
-        console.log('No Robinhood positions returned');
-        return false;
-      }
-
-      // Convert Robinhood API response to our Position format
-      this.positions = data.positions.map((pos: any) => ({
-        symbol: pos.symbol,
-        name: pos.symbol,
-        shares: pos.shares,
-        costBasis: pos.costBasis,
-        purchaseDate: new Date().toISOString().split('T')[0],
-        sector: undefined,
-      }));
-
-      console.log(`Successfully synced ${this.positions.length} positions from Robinhood`);
-      return true;
-    } catch (error) {
-      console.error('Failed to sync from Robinhood:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Get portfolio summary with real-time data
-   * Attempts to sync from E*TRADE first, falls back to Robinhood, then manual/demo data
-   */
-  async getPortfolioSummary(useBroker: boolean = true, preferETrade: boolean = true): Promise<PortfolioSummary> {
-    // Try to sync from broker if enabled (now works with Vercel API routes)
-    if (useBroker) {
-      // Try E*TRADE first (official API), fallback to Robinhood
-      if (preferETrade) {
-        const etradeSuccess = await this.syncFromETrade();
-        if (!etradeSuccess) {
-          await this.syncFromRobinhood();
-        }
-      } else {
-        const robinhoodSuccess = await this.syncFromRobinhood();
-        if (!robinhoodSuccess) {
-          await this.syncFromETrade();
-        }
-      }
-    }
-
+  async getPortfolioSummary(useBroker: boolean = false, preferETrade: boolean = true): Promise<PortfolioSummary> {
     const marketService = getRealMarketDataService();
     const holdings: PortfolioHolding[] = [];
 
-    // Fetch current prices for all positions
+    // Fetch current prices for all signals to check performance
     for (const position of this.positions) {
       try {
-        const quote = await marketService.getQuote(position.symbol);
+        // Skip betting/custom assets for now in real market data check
+        if (position.sector === 'BET') {
+             // Mock update for bets (random outcomes for demo)
+            const isWin = Math.random() > 0.5;
+            const currentPrice = isWin ? position.costBasis * 2 : 0; // Simple win/loss logic
+            holdings.push({
+                ...position,
+                currentPrice: currentPrice,
+                currentValue: currentPrice * position.shares,
+                costValue: position.costBasis * position.shares,
+                gainLoss: (currentPrice - position.costBasis) * position.shares,
+                gainLossPercent: isWin ? 100 : -100,
+                dayChange: 0,
+                dayChangePercent: 0,
+                allocation: 0
+            });
+            continue;
+        }
 
-        const currentValue = quote.price * position.shares;
+        const quote = await marketService.getQuote(position.symbol);
+        let currentPrice = quote.price;
+
+        // If SHORT signal, inverse the PnL logic visually
+        // (For simplicity in this tracker, we'll keep standard math but label it appropriately in UI)
+        
         const costValue = position.costBasis * position.shares;
-        const gainLoss = currentValue - costValue;
+        const currentValue = currentPrice * position.shares;
+        
+        // For Short positions: Profit if Price < Cost
+        let gainLoss = currentValue - costValue;
+        if (position.sector === 'SHORT') {
+            gainLoss = costValue - currentValue; // Invert PnL
+        }
+
         const gainLossPercent = (gainLoss / costValue) * 100;
 
         holdings.push({
           ...position,
-          currentPrice: quote.price,
-          currentValue,
+          currentPrice,
+          currentValue, // For shorts this technically represents liability, but we treat as "Exposure"
           costValue,
           gainLoss,
           gainLossPercent,
-          dayChange: quote.change * position.shares,
-          dayChangePercent: quote.changePercent,
+          dayChange: quote.change * position.shares * (position.sector === 'SHORT' ? -1 : 1),
+          dayChangePercent: quote.changePercent * (position.sector === 'SHORT' ? -1 : 1),
           allocation: 0, // Will be calculated below
         });
       } catch (error) {
@@ -288,25 +209,27 @@ class PortfolioTracker {
     }
 
     // Calculate totals
-    const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
-    const totalCost = holdings.reduce((sum, h) => sum + h.costValue, 0);
-    const totalGainLoss = totalValue - totalCost;
-    const totalGainLossPercent = (totalGainLoss / totalCost) * 100;
+    const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0); // Total Exposure
+    const totalCost = holdings.reduce((sum, h) => sum + h.costValue, 0); // Total Capital Deployed
+    const totalGainLoss = holdings.reduce((sum, h) => sum + h.gainLoss, 0); // Actual PnL
+    const totalGainLossPercent = totalCost > 0 ? (totalGainLoss / totalCost) * 100 : 0;
     const dayChange = holdings.reduce((sum, h) => sum + h.dayChange, 0);
-    const dayChangePercent = (dayChange / (totalValue - dayChange)) * 100;
+    const dayChangePercent = (totalValue - dayChange) !== 0 ? (dayChange / (totalValue - dayChange)) * 100 : 0;
 
-    // Calculate allocations
+    // Calculate "Confidence" (mapped to allocation for UI compatibility)
+    // In a real system, this would come from the AI model. For now, we normalize exposure.
     holdings.forEach(holding => {
       holding.allocation = (holding.currentValue / totalValue) * 100;
     });
 
-    // Find top gainer and loser
+    // Find top performer and worst miss
     const sortedByGainLoss = [...holdings].sort((a, b) => b.gainLossPercent - a.gainLossPercent);
     const topGainer = sortedByGainLoss[0] || null;
     const topLoser = sortedByGainLoss[sortedByGainLoss.length - 1] || null;
 
-    // Calculate diversification score (simplified)
-    const diversificationScore = this.calculateDiversificationScore(holdings);
+    // Calculate "Win Rate" (formerly Diversification Score)
+    const winningTrades = holdings.filter(h => h.gainLoss > 0).length;
+    const winRate = holdings.length > 0 ? Math.round((winningTrades / holdings.length) * 100) : 0;
 
     return {
       totalValue,
@@ -316,67 +239,18 @@ class PortfolioTracker {
       dayChange,
       dayChangePercent,
       holdings,
-      diversificationScore,
+      diversificationScore: winRate, // Mapped to Win Rate
       topGainer,
       topLoser,
     };
   }
 
-  /**
-   * Calculate diversification score
-   */
-  private calculateDiversificationScore(holdings: PortfolioHolding[]): number {
-    // Higher score means better diversification
-    // Score based on:
-    // 1. Number of holdings (more is better, up to a point)
-    // 2. Allocation spread (more even is better)
+  // Helper calculation methods can remain...
+  private calculateDiversificationScore(holdings: PortfolioHolding[]): number { return 0; }
 
-    const numHoldings = holdings.length;
-    const holdingScore = Math.min(numHoldings / 10, 1) * 40; // Max 40 points
-
-    // Calculate allocation variance (lower variance = better diversification)
-    const avgAllocation = 100 / numHoldings;
-    const variance = holdings.reduce((sum, h) => {
-      const diff = h.allocation - avgAllocation;
-      return sum + diff * diff;
-    }, 0) / numHoldings;
-
-    // Convert variance to score (lower variance = higher score)
-    const allocationScore = Math.max(0, 60 - variance); // Max 60 points
-
-    return Math.round(holdingScore + allocationScore);
-  }
-
-  /**
-   * Add a new position
-   */
-  addPosition(position: Position) {
-    this.positions.push(position);
-  }
-
-  /**
-   * Remove a position
-   */
-  removePosition(symbol: string) {
-    this.positions = this.positions.filter(p => p.symbol !== symbol);
-  }
-
-  /**
-   * Update position shares
-   */
-  updateShares(symbol: string, shares: number) {
-    const position = this.positions.find(p => p.symbol === symbol);
-    if (position) {
-      position.shares = shares;
-    }
-  }
-
-  /**
-   * Get all positions
-   */
-  getPositions(): Position[] {
-    return [...this.positions];
-  }
+  addPosition(position: Position) { this.positions.push(position); }
+  removePosition(symbol: string) { this.positions = this.positions.filter(p => p.symbol !== symbol); }
+  getPositions(): Position[] { return [...this.positions]; }
 }
 
 // Singleton instance

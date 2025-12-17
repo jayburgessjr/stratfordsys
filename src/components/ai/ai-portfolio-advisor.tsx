@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Brain, AlertCircle, TrendingUp, Shield, AlertTriangle } from 'lucide-react';
+import { Loader2, Brain, AlertCircle, TrendingUp, Shield, AlertTriangle, Zap, Target } from 'lucide-react';
 import { requestPortfolioAdvice } from '@/lib/api/ai';
 import type { PortfolioAdvice } from '@/types/ai';
 
@@ -13,30 +13,30 @@ export function AIPortfolioAdvisor() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock portfolio data
-  const mockPortfolio = [
-    { symbol: 'AAPL', shares: 10, avgCost: 150, currentPrice: 175 },
-    { symbol: 'TSLA', shares: 5, avgCost: 200, currentPrice: 245 },
-    { symbol: 'MSFT', shares: 8, avgCost: 300, currentPrice: 368 },
-    { symbol: 'NVDA', shares: 3, avgCost: 400, currentPrice: 446 },
-    { symbol: 'SPY', shares: 15, avgCost: 420, currentPrice: 445 },
+  // Mock opportunity data
+  const mockOpportunities = [
+    { name: 'Short Squeeze', probability: 85, potential: 12.5, type: 'Tactical' },
+    { name: 'Merger Arb', probability: 92, potential: 4.2, type: 'Event' },
+    { name: 'Crypto Momentum', probability: 64, potential: 28.0, type: 'Trend' },
+    { name: 'Distressed Asset', probability: 45, potential: 150.0, type: 'Value' },
   ];
 
-  const totalValue = mockPortfolio.reduce((sum, p) => sum + (p.shares * p.currentPrice), 0);
+  const totalPotential = mockOpportunities.reduce((sum, p) => sum + (p.probability * p.potential / 100), 0);
 
   const analyzePortfolio = async () => {
     setIsAnalyzing(true);
     setError(null);
 
     try {
+      // Reusing existing API structure for now, but conceptualizing as "Opportunity Scan"
       const analysis = await requestPortfolioAdvice({
-        positions: mockPortfolio,
-        totalValue,
+        positions: [], // No existing positions needed for opportunity scan
+        totalValue: 100000,
       });
       setAdvice(analysis);
     } catch (err) {
-      console.error('Portfolio analysis error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to analyze portfolio');
+      console.error('Opportunity scan error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to scan for opportunities');
     } finally {
       setIsAnalyzing(false);
     }
@@ -77,32 +77,31 @@ export function AIPortfolioAdvisor() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
+            <Zap className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle>AI Portfolio Advisor</CardTitle>
-              <CardDescription>Get personalized portfolio recommendations</CardDescription>
+              <CardTitle>AI Opportunity Scout</CardTitle>
+              <CardDescription>Real-time wealth creation signals</CardDescription>
             </div>
           </div>
           {advice && (
             <Badge variant={getRiskBadgeVariant(advice.riskLevel)}>
-              {advice.riskLevel} RISK
+              {advice.riskLevel} VOLATILITY
             </Badge>
           )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Current Portfolio Summary */}
+        {/* Predicted Opportunities Summary */}
         <div className="p-4 bg-muted rounded-lg space-y-2">
-          <div className="text-sm text-muted-foreground">Your Portfolio</div>
-          <div className="text-2xl font-bold">${totalValue.toLocaleString()}</div>
-          <div className="grid grid-cols-5 gap-2 mt-2">
-            {mockPortfolio.map(pos => {
-              const pnl = ((pos.currentPrice - pos.avgCost) / pos.avgCost * 100).toFixed(1);
+          <div className="text-sm text-muted-foreground">Top Predicted Opportunities</div>
+          <div className="grid grid-cols-4 gap-2 mt-2">
+            {mockOpportunities.map(opp => {
               return (
-                <div key={pos.symbol} className="text-center">
-                  <div className="text-xs font-medium">{pos.symbol}</div>
-                  <div className={`text-xs ${parseFloat(pnl) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {pnl}%
+                <div key={opp.name} className="text-center p-2 bg-white/5 rounded border border-white/10">
+                  <div className="text-[10px] font-medium text-muted-foreground uppercase">{opp.type}</div>
+                  <div className="text-xs font-bold truncate">{opp.name}</div>
+                  <div className={`text-xs font-mono mt-1 ${opp.probability > 80 ? 'text-green-500' : 'text-yellow-500'}`}>
+                    {opp.probability}% Prob
                   </div>
                 </div>
               );
@@ -117,16 +116,17 @@ export function AIPortfolioAdvisor() {
             disabled={isAnalyzing}
             className="w-full"
             size="lg"
+            variant="cosmic"
           >
             {isAnalyzing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing Portfolio...
+                Scanning Markets...
               </>
             ) : (
               <>
-                <Brain className="mr-2 h-4 w-4" />
-                Get AI Analysis
+                <Target className="mr-2 h-4 w-4" />
+                Scan for Alpha
               </>
             )}
           </Button>
@@ -143,14 +143,14 @@ export function AIPortfolioAdvisor() {
         {/* Advice Display */}
         {advice && (
           <div className="space-y-4">
-            {/* Overall Health */}
+            {/* Overall Health -> Signal Strength */}
             <div>
               <div className="text-sm font-semibold mb-2 flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Overall Health
+                <Zap className="h-4 w-4 text-yellow-500" />
+                Signal Strength
               </div>
               <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
-                {advice.overallHealth}
+                {advice.overallHealth.replace('Healthy', 'Strong Buy Signal').replace('Balanced', 'Accumulation Zone')}
               </p>
             </div>
 
@@ -158,7 +158,7 @@ export function AIPortfolioAdvisor() {
             <div className="p-4 border rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm text-muted-foreground">Risk Assessment</div>
+                  <div className="text-sm text-muted-foreground">Market Volatility</div>
                   <div className={`text-2xl font-bold ${getRiskColor(advice.riskLevel)}`}>
                     {advice.riskLevel}
                   </div>
@@ -178,47 +178,28 @@ export function AIPortfolioAdvisor() {
               <div>
                 <div className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-green-600" />
-                  Recommendations
+                  Actionable Insights
                 </div>
                 <ul className="space-y-2">
                   {advice.suggestions.map((suggestion, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground p-2 bg-green-50 rounded-md">
-                      <span className="text-green-600 mt-0.5">✓</span>
-                      {suggestion}
+                    <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground p-2 bg-green-500/10 border border-green-500/20 rounded-md">
+                      <span className="text-green-500 mt-0.5">➜</span>
+                      {suggestion.replace('Consider adding', 'Buy signal detected for').replace('Diversify into', 'Open position in')}
                     </li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {/* Warnings */}
-            {advice.warnings.length > 0 && (
-              <div>
-                <div className="text-sm font-semibold mb-2 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  Warnings
-                </div>
-                <ul className="space-y-2">
-                  {advice.warnings.map((warning, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground p-2 bg-red-50 rounded-md">
-                      <span className="text-red-600 mt-0.5">⚠</span>
-                      {warning}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Rebalancing */}
+            {/* Rebalancing -> Capital Redeployment */}
             {advice.rebalancingNeeded && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                <div className="flex items-start gap-2 text-sm text-yellow-800">
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
+                <div className="flex items-start gap-2 text-sm text-blue-400">
                   <AlertCircle className="h-4 w-4 mt-0.5" />
                   <div>
-                    <div className="font-semibold">Rebalancing Recommended</div>
+                    <div className="font-semibold">Capital Redeployment Advised</div>
                     <div className="text-xs mt-1">
-                      Your portfolio allocation has drifted from optimal targets.
-                      Consider rebalancing to maintain your risk profile.
+                      New high-conviction signals detected. Consider freeing up capital from low-performing assets.
                     </div>
                   </div>
                 </div>
@@ -228,24 +209,22 @@ export function AIPortfolioAdvisor() {
             {/* Actions */}
             <div className="flex gap-2">
               <Button className="flex-1" variant="outline">
-                View Detailed Report
+                View Signals
               </Button>
               <Button className="flex-1" variant="outline">
-                Start Rebalancing
+                Auto-Execute
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => setAdvice(null)}
               >
-                Analyze Again
+                Rescan
               </Button>
             </div>
 
             {/* Disclaimer */}
             <div className="text-xs text-center text-muted-foreground p-3 bg-muted rounded-md">
-              ⚠️ AI analysis is for informational purposes only and should not be considered
-              as financial advice. Consult with a qualified financial advisor before making
-              investment decisions.
+              ⚠️ AI predictions are probabilistic. Past performance of the Opportunity Engine does not guarantee future results.
             </div>
           </div>
         )}
@@ -254,9 +233,9 @@ export function AIPortfolioAdvisor() {
         {!advice && !error && !isAnalyzing && (
           <div className="text-center py-8 text-muted-foreground">
             <Brain className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>Get AI-powered insights about your portfolio</p>
+            <p>Scan markets for wealth creation anomalies</p>
             <p className="text-xs mt-2">
-              Diversification • Risk Assessment • Rebalancing Suggestions
+              Arbitrage • Short Squeezes • Distressed Assets
             </p>
           </div>
         )}

@@ -12,6 +12,7 @@ import { getSecurityRiskService, type SecurityDashboard } from '@/lib/services/s
 export default function SecurityPage() {
   const [dashboard, setDashboard] = useState<SecurityDashboard | null>(null);
   const [loading, setLoading] = useState(true);
+  const service = getSecurityRiskService();
 
   useEffect(() => {
     loadSecurityData();
@@ -20,7 +21,6 @@ export default function SecurityPage() {
   const loadSecurityData = async () => {
     setLoading(true);
     try {
-      const service = getSecurityRiskService();
       const data = await service.getSecurityDashboard();
       setDashboard(data);
     } catch (error) {
@@ -133,9 +133,9 @@ export default function SecurityPage() {
                       <div className="flex items-center space-x-2">
                         {metric.status === 'active' ? (
                           <CheckCircle className="h-4 w-4 text-green-600" />
-                        ) : metric.status === 'warning' ? (
+                        ) : metric.status === 'warning' && (
                           <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                        ) : (
+                        ) || (
                           <XCircle className="h-4 w-4 text-red-600" />
                         )}
                         <span className="text-sm font-medium">{metric.label}</span>
@@ -159,33 +159,30 @@ export default function SecurityPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {dashboard.recentAlerts.map((alert) => {
-                  const service = getSecurityRiskService();
-                  return (
-                    <div key={alert.id} className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
-                      <div className="flex items-center space-x-2">
-                        {alert.type === 'error' && <XCircle className="h-4 w-4 text-red-600" />}
-                        {alert.type === 'warning' && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
-                        {alert.type === 'success' && <CheckCircle className="h-4 w-4 text-green-600" />}
-                        {alert.type === 'info' && <Eye className="h-4 w-4 text-blue-600" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm">{alert.message}</div>
-                        <div className="text-xs text-muted-foreground">{service.formatTimeAgo(alert.time)}</div>
-                      </div>
-                      <Badge
-                        variant={
-                          alert.severity === 'high' ? 'destructive' :
-                          alert.severity === 'medium' ? 'secondary' :
-                          'outline'
-                        }
-                        className="text-xs"
-                      >
-                        {alert.severity}
-                      </Badge>
+                {dashboard.recentAlerts.map((alert) => (
+                  <div key={alert.id} className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center space-x-2">
+                      {alert.type === 'error' && <XCircle className="h-4 w-4 text-red-600" />}
+                      {alert.type === 'warning' && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
+                      {alert.type === 'success' && <CheckCircle className="h-4 w-4 text-green-600" />}
+                      {alert.type === 'info' && <Eye className="h-4 w-4 text-blue-600" />}
                     </div>
-                  );
-                })}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm">{alert.message}</div>
+                      <div className="text-xs text-muted-foreground">{service.formatTimeAgo(alert.time)}</div>
+                    </div>
+                    <Badge
+                      variant={
+                        alert.severity === 'high' ? 'destructive' :
+                        alert.severity === 'medium' ? 'secondary' :
+                        'outline'
+                      }
+                      className="text-xs"
+                    >
+                      {alert.severity}
+                    </Badge>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -264,20 +261,17 @@ export default function SecurityPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {dashboard.auditTrail.map((event, index) => {
-                  const service = getSecurityRiskService();
-                  return (
-                    <div key={index} className="text-sm">
-                      <div className="font-medium">{event.action}</div>
-                      <div className="text-muted-foreground">
-                        User: {event.user} • {service.formatTimeAgo(event.timestamp)}
-                      </div>
-                      {event.details && (
-                        <div className="text-xs text-muted-foreground mt-1">{event.details}</div>
-                      )}
+                {dashboard.auditTrail.map((event, index) => (
+                  <div key={index} className="text-sm">
+                    <div className="font-medium">{event.action}</div>
+                    <div className="text-muted-foreground">
+                      User: {event.user} • {service.formatTimeAgo(event.timestamp)}
                     </div>
-                  );
-                })}
+                    {event.details && (
+                      <div className="text-xs text-muted-foreground mt-1">{event.details}</div>
+                    )}
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

@@ -152,6 +152,36 @@ class SecurityRiskService {
     const portfolio = await tracker.getPortfolioSummary();
     const riskFactors: RiskFactor[] = [];
 
+    // Handle empty portfolio case safely
+    if (portfolio.holdings.length === 0) {
+      return [
+        {
+          name: 'Market Volatility',
+          level: 0,
+          status: 'good',
+          description: 'No active positions to analyze',
+        },
+        {
+          name: 'Position Concentration',
+          level: 0,
+          status: 'good',
+          description: 'No active positions',
+        },
+        {
+          name: 'Drawdown Exposure',
+          level: 0,
+          status: 'good',
+          description: 'No active positions',
+        },
+        {
+          name: 'Liquidity Risk',
+          level: 0,
+          status: 'good',
+          description: 'No active positions',
+        },
+      ];
+    }
+
     // 1. Market Volatility Risk
     // Calculate based on daily changes
     const avgDayChange = Math.abs(portfolio.dayChangePercent);

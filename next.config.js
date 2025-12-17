@@ -3,7 +3,7 @@ const nextConfig = {
   // Use standalone for Vercel serverless functions
   // or export for static builds
   // Don't use 'export' in development as it breaks API routes
-  output: process.env.VERCEL ? undefined : (process.env.BUILD_STANDALONE ? 'standalone' : (process.env.NODE_ENV === 'production' ? 'export' : undefined)),
+  output: process.env.VERCEL ? undefined : (process.env.BUILD_STANDALONE ? 'standalone' : undefined),
 
   // Trailing slash for static exports only
   ...(process.env.VERCEL ? {} : (process.env.BUILD_STANDALONE ? {} : {
@@ -76,13 +76,7 @@ const nextConfig = {
 
   // Redirects for SEO
   async redirects() {
-    return [
-      {
-        source: '/dashboard',
-        destination: '/',
-        permanent: true,
-      },
-    ];
+    return [];
   },
 
   // Image optimization

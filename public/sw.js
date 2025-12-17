@@ -1,8 +1,8 @@
 // Stratford AI Service Worker
 // Advanced offline functionality for financial data application
 
-const CACHE_NAME = 'stratford-ai-v1.0.0'
-const DATA_CACHE_NAME = 'stratford-ai-data-v1.0.0'
+const CACHE_NAME = 'stratford-ai-v1.0.1'
+const DATA_CACHE_NAME = 'stratford-ai-data-v1.0.1'
 
 // Critical resources for offline functionality
 const STATIC_RESOURCES = [

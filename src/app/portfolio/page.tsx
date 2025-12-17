@@ -5,7 +5,7 @@ import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { AIPortfolioAdvisor } from '@/components/ai/ai-portfolio-advisor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Database, TrendingUp, TrendingDown, DollarSign, RefreshCw, Activity, PieChart, ArrowUpRight, ArrowDownRight, LayoutDashboard, Settings } from 'lucide-react';
+import { Database, TrendingUp, TrendingDown, DollarSign, RefreshCw, Activity, PieChart, ArrowUpRight, ArrowDownRight, LayoutDashboard, Settings, Target, Zap } from 'lucide-react';
 import { getPortfolioTracker, type PortfolioSummary } from '@/lib/services/portfolio-tracker';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -41,7 +41,7 @@ export default function PortfolioPage() {
               <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse" />
               <div className="absolute inset-0 rounded-full border-t-4 border-primary animate-spin" />
             </div>
-            <p className="text-muted-foreground animate-pulse">Syncing assets...</p>
+            <p className="text-muted-foreground animate-pulse">Syncing opportunity data...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -56,19 +56,22 @@ export default function PortfolioPage() {
         <div className="flex flex-none justify-between items-center px-1">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              Portfolio Matrix
+              Performance Matrix
             </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+                Tracking AI-Generated Wealth Opportunities
+            </p>
           </div>
           <div className="flex gap-3">
             <Link href="/portfolio/manage">
               <Button variant="outline" size="sm" className="gap-2 bg-black/40 border-white/10 hover:bg-white/5 h-8">
-                <Settings className="h-3.5 w-3.5" />
-                Manage
+                <Target className="h-3.5 w-3.5" />
+                Log Execution
               </Button>
             </Link>
             <Button onClick={loadPortfolio} variant="cosmic" size="sm" className="gap-2 shadow-cyan-500/20 h-8">
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Sync Data
+              Sync Status
             </Button>
           </div>
         </div>
@@ -84,7 +87,7 @@ export default function PortfolioPage() {
           <Card className="border-l-4 border-l-emerald-500/50 bg-black/40 border-white/5">
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-1">
-                <CardTitle className="text-xs font-medium text-zinc-400">Total Value</CardTitle>
+                <CardTitle className="text-xs font-medium text-zinc-400">Tracked Opportunity Value</CardTitle>
                 <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
               </div>
               <div className="text-xl font-bold text-white">${portfolio.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
@@ -98,18 +101,18 @@ export default function PortfolioPage() {
           <Card className="border-l-4 border-l-blue-500/50 bg-black/40 border-white/5">
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-1">
-                <CardTitle className="text-xs font-medium text-zinc-400">Holdings</CardTitle>
-                <Database className="h-3.5 w-3.5 text-blue-400" />
+                <CardTitle className="text-xs font-medium text-zinc-400">Active Signals</CardTitle>
+                <Zap className="h-3.5 w-3.5 text-blue-400" />
               </div>
               <div className="text-xl font-bold text-white">{portfolio.holdings.length}</div>
-              <p className="text-[10px] text-muted-foreground mt-1">Active Positions</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Live Predictions</p>
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-purple-500/50 bg-black/40 border-white/5">
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-1">
-                <CardTitle className="text-xs font-medium text-zinc-400">24h Change</CardTitle>
+                <CardTitle className="text-xs font-medium text-zinc-400">Signal Accuracy (24h)</CardTitle>
                 {portfolio.dayChange >= 0 ? (
                   <TrendingUp className="h-3.5 w-3.5 text-purple-400" />
                 ) : (
@@ -120,7 +123,7 @@ export default function PortfolioPage() {
                 {portfolio.dayChange >= 0 ? '+' : '-'}${Math.abs(portfolio.dayChange).toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </div>
               <p className={`text-[10px] mt-1 ${portfolio.dayChangePercent >= 0 ? 'text-purple-400' : 'text-rose-400'}`}>
-                {portfolio.dayChangePercent >= 0 ? '+' : ''}{portfolio.dayChangePercent.toFixed(2)}% today
+                {portfolio.dayChangePercent >= 0 ? '+' : ''}{portfolio.dayChangePercent.toFixed(2)}% hit rate
               </p>
             </CardContent>
           </Card>
@@ -128,12 +131,12 @@ export default function PortfolioPage() {
           <Card className="border-l-4 border-l-amber-500/50 bg-black/40 border-white/5">
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-1">
-                <CardTitle className="text-xs font-medium text-zinc-400">Diversification</CardTitle>
-                <PieChart className="h-3.5 w-3.5 text-amber-400" />
+                <CardTitle className="text-xs font-medium text-zinc-400">Win Rate</CardTitle>
+                <Target className="h-3.5 w-3.5 text-amber-400" />
               </div>
-              <div className="text-xl font-bold text-white">{portfolio.diversificationScore}/100</div>
+              <div className="text-xl font-bold text-white">{portfolio.diversificationScore}%</div>
               <p className="text-[10px] text-muted-foreground mt-1">
-                {portfolio.diversificationScore >= 80 ? 'Excellent Balance' : portfolio.diversificationScore >= 60 ? 'Good Balance' : 'Concentrated Risk'}
+                {portfolio.diversificationScore >= 60 ? 'High Confidence' : 'Optimizing...'}
               </p>
             </CardContent>
           </Card>
@@ -147,7 +150,7 @@ export default function PortfolioPage() {
             <CardHeader className="py-3 px-4 flex-none border-b border-white/5">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <LayoutDashboard className="h-4 w-4 text-primary" />
-                Holdings Allocation
+                Active Signals & Opportunities
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-white/10">
@@ -161,7 +164,7 @@ export default function PortfolioPage() {
                         </div>
                         <div>
                           <div className="font-bold text-white text-sm">{holding.symbol}</div>
-                          <div className="text-[10px] text-muted-foreground">{holding.shares} shares @ ${holding.currentPrice.toFixed(2)}</div>
+                          <div className="text-[10px] text-muted-foreground">Signal: {holding.shares > 0 ? 'LONG' : 'SHORT'} @ ${holding.currentPrice.toFixed(2)}</div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -175,7 +178,7 @@ export default function PortfolioPage() {
 
                     <div className="space-y-1">
                       <div className="flex justify-between text-[10px] text-muted-foreground">
-                        <span>Portfolio Weight</span>
+                        <span>Confidence</span>
                         <span>{holding.allocation.toFixed(1)}%</span>
                       </div>
                       <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
@@ -196,12 +199,12 @@ export default function PortfolioPage() {
 
             <Card className="flex-none bg-black/20 border-white/5">
               <CardHeader className="py-3 px-4 border-b border-white/5">
-                <CardTitle className="text-sm">Top Movers</CardTitle>
+                <CardTitle className="text-sm">Top Performers</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-3">
                 {portfolio.topGainer && (
                   <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                    <div className="text-[10px] uppercase tracking-wider text-emerald-400 mb-1 font-semibold">Top Gainer</div>
+                    <div className="text-[10px] uppercase tracking-wider text-emerald-400 mb-1 font-semibold">Best Signal</div>
                     <div className="flex justify-between items-center">
                       <div>
                         <div className="font-bold text-white text-sm">{portfolio.topGainer.symbol}</div>
@@ -215,7 +218,7 @@ export default function PortfolioPage() {
                 )}
                 {portfolio.topLoser && portfolio.topLoser !== portfolio.topGainer && (
                   <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
-                    <div className="text-[10px] uppercase tracking-wider text-rose-400 mb-1 font-semibold">Top Loser</div>
+                    <div className="text-[10px] uppercase tracking-wider text-rose-400 mb-1 font-semibold">Worst Miss</div>
                     <div className="flex justify-between items-center">
                       <div>
                         <div className="font-bold text-white text-sm">{portfolio.topLoser.symbol}</div>
@@ -232,7 +235,7 @@ export default function PortfolioPage() {
 
             <Card className="flex-none bg-black/20 border-white/5">
               <CardHeader className="py-3 px-4 border-b border-white/5">
-                <CardTitle className="text-sm">Sector Breakdown</CardTitle>
+                <CardTitle className="text-sm">Opportunity Type Breakdown</CardTitle>
               </CardHeader>
               <CardContent className="p-4 space-y-3">
                 {Array.from(new Set(portfolio.holdings.map(h => h.sector).filter(Boolean))).map(sector => {
@@ -253,7 +256,7 @@ export default function PortfolioPage() {
 
             <Card className="flex-none bg-black/20 border-white/5">
               <CardHeader className="py-3 px-4 border-b border-white/5">
-                <CardTitle className="text-sm">Historical Returns</CardTitle>
+                <CardTitle className="text-sm">Historical Performance</CardTitle>
               </CardHeader>
               <CardContent className="p-4">
                 <div className="space-y-3">

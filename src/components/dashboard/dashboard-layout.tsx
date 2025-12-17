@@ -13,12 +13,12 @@ interface DashboardLayoutProps {
 }
 
 const navItems = [
-  { href: '/', label: 'Overview', icon: BarChart3 },
+  { href: '/dashboard', label: 'Overview', icon: BarChart3 },
   { href: '/quantum/', label: 'Quantum', icon: Zap },
   { href: '/strategy/', label: 'Strategy', icon: Lightbulb },
   { href: '/trading/', label: 'Markets', icon: TrendingUp },
   { href: '/news/', label: 'News', icon: Globe },
-  { href: '/portfolio/', label: 'Portfolio', icon: Database },
+  { href: '/portfolio/', label: 'Performance', icon: Database },
   { href: '/security/', label: 'Security', icon: Shield },
   { href: '/settings/', label: 'Settings', icon: Settings },
 ];
