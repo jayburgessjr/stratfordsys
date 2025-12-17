@@ -1,5 +1,5 @@
 import { NextApiRequest } from 'next'
-import { RedisService } from '@/lib/database/redis'
+
 
 interface RateLimitOptions {
   maxRequests: number
@@ -16,7 +16,7 @@ interface RateLimitResult {
   total: number
 }
 
-const redis = new RedisService()
+import { redisService as redis } from '@/lib/database/redis'
 
 export async function rateLimit(
   req: NextApiRequest,
@@ -25,7 +25,7 @@ export async function rateLimit(
   const {
     maxRequests,
     windowMs,
-    keyGenerator = (req) => req.ip || 'anonymous',
+    keyGenerator = (req) => (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'anonymous',
     skipSuccessfulRequests = false,
     skipFailedRequests = false
   } = options

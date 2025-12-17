@@ -45,3 +45,15 @@ export interface PortfolioAdvice {
   warnings: string[];
   rebalancingNeeded: boolean;
 }
+
+export interface QuantumAllocation {
+  allocation: {
+    assetClass: 'Stock' | 'Crypto' | 'Commodity' | 'Prediction' | 'Lottery' | 'Cash';
+    percentage: number;
+    reasoning: string;
+    recommendedAssets: string[];
+  }[];
+  totalProjectedReturn: string;
+  riskScore: number;
+  agentSummary: string;
+}

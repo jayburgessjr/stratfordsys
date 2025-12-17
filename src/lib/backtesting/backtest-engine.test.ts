@@ -12,6 +12,9 @@ import {
 } from './backtest-engine';
 import { createMovingAverageCrossoverStrategy } from '@/lib/strategies/moving-average-crossover';
 import type { TimeSeries, OHLCVData } from '@/types/market-data';
+import { TimeInterval, OutputSize, DataSource } from '@/types/market-data';
+import { MovingAverageType } from '@/types/strategy';
+import { CommissionType, SlippageType } from '@/types/backtest';
 import type { BacktestConfig } from '@/types/backtest';
 
 describe('Backtesting Engine', () => {
@@ -45,13 +48,13 @@ describe('Backtesting Engine', () => {
         currency: 'USD',
         timeZone: 'America/New_York',
         lastRefreshed: new Date().toISOString(),
-        dataSource: 'CSV_FILE',
-        interval: 'daily',
-        outputSize: 'full'
+        dataSource: DataSource.CSV_FILE,
+        interval: TimeInterval.DAILY,
+        outputSize: OutputSize.FULL
       }
     };
 
-    const strategy = createMovingAverageCrossoverStrategy(5, 15, 'SIMPLE', 0);
+    const strategy = createMovingAverageCrossoverStrategy(5, 15, MovingAverageType.SIMPLE, 0);
     backtestConfig = createBacktestConfig(
       strategy,
       'TEST',
@@ -75,8 +78,8 @@ describe('Backtesting Engine', () => {
       expect(config.period.start).toBe('2023-01-01');
       expect(config.period.end).toBe('2023-12-31');
       expect(config.initialCapital).toBe(50000);
-      expect(config.commission.type).toBe('PERCENTAGE');
-      expect(config.slippage.type).toBe('PERCENTAGE');
+      expect(config.commission.type).toBe(CommissionType.PERCENTAGE);
+      expect(config.slippage.type).toBe(SlippageType.PERCENTAGE);
       expect(config.options).toBeDefined();
     });
 
@@ -314,7 +317,7 @@ describe('Backtesting Engine', () => {
     it('should apply percentage-based commission', async () => {
       const commissionConfig = {
         ...backtestConfig,
-        commission: { type: 'PERCENTAGE' as const, value: 0.01 } // 1%
+        commission: { type: CommissionType.PERCENTAGE, value: 0.01 } // 1%
       };
 
       const engine = new BacktestEngine(commissionConfig);
@@ -331,7 +334,7 @@ describe('Backtesting Engine', () => {
     it('should apply fixed commission', async () => {
       const commissionConfig = {
         ...backtestConfig,
-        commission: { type: 'FIXED' as const, value: 9.99 }
+        commission: { type: CommissionType.FIXED, value: 9.99 }
       };
 
       const engine = new BacktestEngine(commissionConfig);
@@ -347,7 +350,7 @@ describe('Backtesting Engine', () => {
     it('should apply slippage costs', async () => {
       const slippageConfig = {
         ...backtestConfig,
-        slippage: { type: 'PERCENTAGE' as const, value: 0.001 } // 0.1%
+        slippage: { type: SlippageType.PERCENTAGE, value: 0.001 } // 0.1%
       };
 
       const engine = new BacktestEngine(slippageConfig);

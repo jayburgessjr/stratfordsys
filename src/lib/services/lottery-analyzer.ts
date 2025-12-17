@@ -326,6 +326,14 @@ class LotteryAnalyzer {
   public getCalPick6History(count: number = 3): HistoricalData[] {
     return this.calPick6History.slice(0, count);
   }
+
+  public generatePowerballNumbers(): LotteryPrediction {
+    return this.generatePowerballPrediction();
+  }
+
+  public generateMegaMillionsNumbers(): LotteryPrediction {
+    return this.generateMegaMillionsPrediction();
+  }
 }
 
 // Singleton instance

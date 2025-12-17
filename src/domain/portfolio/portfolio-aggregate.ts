@@ -4,7 +4,9 @@
  */
 
 import { AggregateRoot, DomainEvent } from '../core/base-entity'
-import { Money, Symbol, Quantity, Price, Percentage, RiskLevel, DateRange } from '../core/value-objects'
+import { Money, Symbol, Quantity, Price, Percentage, RiskLevel, DateRange, ValueObject, Currency } from '../core/value-objects'
+
+export { Money, Symbol, Quantity, Price, Percentage, RiskLevel, DateRange, Currency }
 
 export class Portfolio extends AggregateRoot<string> {
   private _name: string
@@ -377,7 +379,7 @@ export class TradingStrategy {
     public readonly description: string,
     public readonly riskLevel: RiskLevel,
     public readonly parameters: Map<string, any>
-  ) {}
+  ) { }
 }
 
 // Rebalance Order Value Object
@@ -403,7 +405,7 @@ export class PortfolioCreatedEvent implements DomainEvent {
     public readonly userId: string,
     public readonly initialCash: Money,
     public readonly occurredOn: Date
-  ) {}
+  ) { }
 
   get eventType(): string { return 'PortfolioCreated' }
   get payload(): any {
@@ -420,7 +422,7 @@ export class CashDepositedEvent implements DomainEvent {
     public readonly aggregateId: string,
     public readonly amount: Money,
     public readonly occurredOn: Date
-  ) {}
+  ) { }
 
   get eventType(): string { return 'CashDeposited' }
   get payload(): any {
@@ -436,7 +438,7 @@ export class CashWithdrawnEvent implements DomainEvent {
     public readonly aggregateId: string,
     public readonly amount: Money,
     public readonly occurredOn: Date
-  ) {}
+  ) { }
 
   get eventType(): string { return 'CashWithdrawn' }
   get payload(): any {
@@ -454,7 +456,7 @@ export class StockPurchasedEvent implements DomainEvent {
     public readonly quantity: Quantity,
     public readonly price: Price,
     public readonly occurredOn: Date
-  ) {}
+  ) { }
 
   get eventType(): string { return 'StockPurchased' }
   get payload(): any {
@@ -474,7 +476,7 @@ export class StockSoldEvent implements DomainEvent {
     public readonly quantity: Quantity,
     public readonly price: Price,
     public readonly occurredOn: Date
-  ) {}
+  ) { }
 
   get eventType(): string { return 'StockSold' }
   get payload(): any {
@@ -492,7 +494,7 @@ export class PortfolioRebalancedEvent implements DomainEvent {
     public readonly aggregateId: string,
     public readonly orders: RebalanceOrder[],
     public readonly occurredOn: Date
-  ) {}
+  ) { }
 
   get eventType(): string { return 'PortfolioRebalanced' }
   get payload(): any {
@@ -513,7 +515,7 @@ export class StrategyAssignedEvent implements DomainEvent {
     public readonly aggregateId: string,
     public readonly strategyId: string,
     public readonly occurredOn: Date
-  ) {}
+  ) { }
 
   get eventType(): string { return 'StrategyAssigned' }
   get payload(): any {
@@ -525,7 +527,7 @@ export class PortfolioDeactivatedEvent implements DomainEvent {
   constructor(
     public readonly aggregateId: string,
     public readonly occurredOn: Date
-  ) {}
+  ) { }
 
   get eventType(): string { return 'PortfolioDeactivated' }
   get payload(): any {
@@ -539,7 +541,7 @@ export class RiskLevelUpdatedEvent implements DomainEvent {
     public readonly oldRiskLevel: RiskLevel,
     public readonly newRiskLevel: RiskLevel,
     public readonly occurredOn: Date
-  ) {}
+  ) { }
 
   get eventType(): string { return 'RiskLevelUpdated' }
   get payload(): any {

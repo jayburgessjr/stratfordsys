@@ -604,45 +604,55 @@ class MongoDBService {
       // News sentiment distribution
       this.NewsArticle.aggregate([
         { $match: { publishedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } },
-        { $group: {
-          _id: '$sentiment.label',
-          count: { $sum: 1 }
-        }}
+        {
+          $group: {
+            _id: '$sentiment.label',
+            count: { $sum: 1 }
+          }
+        }
       ]),
 
       // Social sentiment distribution
       this.SocialMediaPost.aggregate([
         { $match: { timestamp: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } },
-        { $group: {
-          _id: {
-            $cond: [
-              { $gt: ['$sentiment', 0.1] }, 'positive',
-              { $cond: [
-                { $lt: ['$sentiment', -0.1] }, 'negative', 'neutral'
-              ]}
-            ]
-          },
-          count: { $sum: 1 }
-        }}
+        {
+          $group: {
+            _id: {
+              $cond: [
+                { $gt: ['$sentiment', 0.1] }, 'positive',
+                {
+                  $cond: [
+                    { $lt: ['$sentiment', -0.1] }, 'negative', 'neutral'
+                  ]
+                }
+              ]
+            },
+            count: { $sum: 1 }
+          }
+        }
       ]),
 
       // Trending symbols
       this.SocialMediaPost.aggregate([
         { $match: { timestamp: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } } },
         { $unwind: '$mentionedSymbols' },
-        { $group: {
-          _id: '$mentionedSymbols',
-          mentions: { $sum: 1 },
-          avgSentiment: { $avg: '$sentiment' }
-        }},
+        {
+          $group: {
+            _id: '$mentionedSymbols',
+            mentions: { $sum: 1 },
+            avgSentiment: { $avg: '$sentiment' }
+          }
+        },
         { $sort: { mentions: -1 } },
         { $limit: 10 },
-        { $project: {
-          symbol: '$_id',
-          mentions: 1,
-          sentiment: '$avgSentiment',
-          _id: 0
-        }}
+        {
+          $project: {
+            symbol: '$_id',
+            mentions: 1,
+            sentiment: '$avgSentiment',
+            _id: 0
+          }
+        }
       ])
     ])
 
@@ -684,6 +694,11 @@ class MongoDBService {
       socialPosts: socialCount,
       economicEvents: eventCount
     }
+  }
+  // Generic aggregation
+  async aggregate(collectionName: string, pipeline: any[]): Promise<any[]> {
+    if (!this.isConnected) await this.connect();
+    return await mongoose.connection.db.collection(collectionName).aggregate(pipeline).toArray();
   }
 }
 

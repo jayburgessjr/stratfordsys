@@ -23,24 +23,6 @@ export function DemoPerformanceOverview() {
         gradient="purple"
         trend={{ value: "1.65 Sortino", isPositive: true }}
       />
-
-      <GradientStatCard
-        title="Sharpe Ratio"
-        value="1.42"
-        subtitle="Risk-adjusted returns"
-        icon={Target}
-        gradient="orange"
-        trend={{ value: "Above 1.0 = Good", isPositive: true }}
-      />
-
-      <GradientStatCard
-        title="Max Drawdown"
-        value="8.7%"
-        subtitle="Largest peak-to-trough decline"
-        icon={Shield}
-        gradient="teal"
-        trend={{ value: "Low risk", isPositive: true }}
-      />
     </div>
   );
 }

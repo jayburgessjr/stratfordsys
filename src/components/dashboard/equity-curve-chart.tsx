@@ -31,8 +31,7 @@ interface EquityChartTooltipProps {
 
 function EquityChartTooltip({ active, payload, label }: EquityChartTooltipProps) {
   if (active && payload && payload.length) {
-    const data = payload[0]?.payload;
-
+    // const data = payload[0]?.payload; // Unused
     return (
       <div className="rounded-lg border bg-background p-3 shadow-md">
         <p className="font-medium">{label}</p>
@@ -41,18 +40,18 @@ function EquityChartTooltip({ active, payload, label }: EquityChartTooltipProps)
             {entry.name}: {
               entry.name === 'Equity Value'
                 ? new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                  }).format(entry.value)
+                  style: 'currency',
+                  currency: 'USD',
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0
+                }).format(entry.value)
                 : entry.name === 'Drawdown'
-                ? new Intl.NumberFormat('en-US', {
+                  ? new Intl.NumberFormat('en-US', {
                     style: 'percent',
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                   }).format(entry.value)
-                : new Intl.NumberFormat('en-US', {
+                  : new Intl.NumberFormat('en-US', {
                     style: 'percent',
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
@@ -99,23 +98,34 @@ export function EquityCurveChart() {
   }
 
   // Prepare chart data
-  const chartData = backtestResult.equityCurve.map((value: number, index: number) => {
-    const date = backtestResult.equity[index]?.date || `Day ${index + 1}`;
-    const dailyReturn = index > 0
-      ? (value - backtestResult.equityCurve[index - 1]) / backtestResult.equityCurve[index - 1]
-      : 0;
+  const chartData = (backtestResult.equity || []).map((point: any, index: number) => {
+    // Determine daily return
+    // Note: backtestResult.equity is an array of objects { date: string, value: number, ... }
+    const currentDate = point.date || `Day ${index + 1}`;
+    const currentValue = point.value;
 
-    // Calculate running drawdown
-    const peak = backtestResult.equityCurve.slice(0, index + 1).reduce((max: number, val: number) => Math.max(max, val), value);
-    const drawdown = peak > 0 ? (peak - value) / peak : 0;
+    // Previous value for daily return
+    const prevValue = index > 0 ? backtestResult.equity[index - 1].value : currentValue;
+    const dailyReturn = index > 0 ? (currentValue - prevValue) / prevValue : 0;
+
+    // Determine drawdown
+    // We can assume point.drawdown exists if calculated by engine, 
+    // OR we can recalculate it here if needed. 
+    // Let's recalculate properly to be safe:
+    // Peak is max of all equity values up to this point
+    const peak = backtestResult.equity
+      .slice(0, index + 1)
+      .reduce((max: number, p: any) => Math.max(max, p.value), currentValue);
+
+    const drawdown = peak > 0 ? (peak - currentValue) / peak : 0;
 
     return {
-      date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      fullDate: date,
-      equity: value,
+      date: new Date(currentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      fullDate: currentDate,
+      equity: currentValue,
       drawdown: -drawdown, // Negative for chart display
       dailyReturn: dailyReturn,
-      benchmark: backtestResult.initialCapital * (1 + 0.08 * (index / 252)) // 8% benchmark
+      benchmark: backtestResult.execution.initialCapital * (1 + 0.08 * (index / 252)) // 8% benchmark
     };
   });
 
@@ -162,6 +172,7 @@ export function EquityCurveChart() {
           showBenchmark: false
         };
       default:
+        // Default fallback (should not happen with View type)
         return {
           title: 'Portfolio Equity Curve',
           dataKey: 'equity',
@@ -173,6 +184,15 @@ export function EquityCurveChart() {
   };
 
   const config = getChartConfig();
+  const totalPnL = backtestResult.execution.finalValue - backtestResult.execution.initialCapital;
+  const totalReturn = totalPnL / backtestResult.execution.initialCapital;
+
+  // Safe date parsing
+  const startTime = new Date(backtestResult.period.start).getTime();
+  const endTime = new Date(backtestResult.period.end).getTime();
+  const durationDays = !isNaN(startTime) && !isNaN(endTime)
+    ? Math.round((endTime - startTime) / (1000 * 60 * 60 * 24))
+    : 0;
 
   return (
     <Card>
@@ -258,8 +278,8 @@ export function EquityCurveChart() {
                   view === 'equity'
                     ? 'Equity Value'
                     : view === 'drawdown'
-                    ? 'Drawdown'
-                    : 'Daily Return'
+                      ? 'Drawdown'
+                      : 'Daily Return'
                 }
               />
             </LineChart>
@@ -275,7 +295,7 @@ export function EquityCurveChart() {
                 style: 'currency',
                 currency: 'USD',
                 minimumFractionDigits: 0
-              }).format(backtestResult.initialCapital)}
+              }).format(backtestResult.execution.initialCapital)}
             </div>
           </div>
           <div className="text-center">
@@ -285,22 +305,22 @@ export function EquityCurveChart() {
                 style: 'currency',
                 currency: 'USD',
                 minimumFractionDigits: 0
-              }).format(backtestResult.finalValue)}
+              }).format(backtestResult.execution.finalValue)}
             </div>
           </div>
           <div className="text-center">
             <div className="font-medium text-muted-foreground">Total Return</div>
-            <div className={`text-lg font-bold ${backtestResult.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-lg font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {new Intl.NumberFormat('en-US', {
                 style: 'percent',
                 minimumFractionDigits: 2
-              }).format(backtestResult.totalPnL / backtestResult.initialCapital)}
+              }).format(totalReturn)}
             </div>
           </div>
           <div className="text-center">
             <div className="font-medium text-muted-foreground">Duration</div>
             <div className="text-lg font-bold">
-              {Math.round((new Date(backtestResult.endDate).getTime() - new Date(backtestResult.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
+              {durationDays} days
             </div>
           </div>
         </div>

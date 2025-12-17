@@ -70,7 +70,7 @@ class RobinhoodService {
     this.client = Robinhood({
       username: this.credentials.username,
       password: this.credentials.password,
-    });
+    }, () => { });
   }
 
   /**

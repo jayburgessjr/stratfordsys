@@ -1,5 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface GradientStatCardProps {
   title: string;
@@ -23,55 +24,47 @@ export function GradientStatCard({
   trend,
   className
 }: GradientStatCardProps) {
-  const gradientClasses = {
-    blue: 'bg-gradient-blue',
-    purple: 'bg-gradient-purple',
-    green: 'bg-gradient-green',
-    orange: 'bg-gradient-orange',
-    red: 'bg-gradient-red',
-    teal: 'bg-gradient-teal'
+  // Map gradient prop to simple border accent color instead of full background
+  const accentColor = {
+    blue: 'border-l-blue-500',
+    purple: 'border-l-violet-500',
+    green: 'border-l-emerald-500',
+    orange: 'border-l-orange-500',
+    red: 'border-l-rose-500',
+    teal: 'border-l-teal-500'
   };
 
   return (
-    <div
-      className={cn(
-        'relative overflow-hidden rounded-lg p-6 text-white shadow-lg transition-all hover:shadow-xl hover:scale-105',
-        gradientClasses[gradient],
-        className
-      )}
-    >
-      {/* Background Pattern */}
-      <div className="absolute top-0 right-0 -mt-4 -mr-4 opacity-20">
-        <Icon className="h-32 w-32" strokeWidth={1} />
-      </div>
+    <Card className={cn("rounded-sm border-l-4 shadow-sm hover:shadow-md transition-all", accentColor[gradient], className)}>
+      <CardContent className="p-5">
+        <div className="flex justify-between items-start mb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+          <Icon className="h-4 w-4 text-muted-foreground/70" />
+        </div>
 
-      {/* Content */}
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-4">
-          <div className="p-3 bg-white/20 backdrop-blur-sm rounded-lg">
-            <Icon className="h-6 w-6" />
-          </div>
+        <div className="flex items-baseline space-x-2">
+          <span className="text-3xl font-mono font-medium tracking-tight text-foreground">
+            {value}
+          </span>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between text-xs">
           {trend && (
             <div className={cn(
-              "px-2 py-1 rounded-md text-xs font-semibold bg-white/20 backdrop-blur-sm",
-              trend.isPositive ? 'text-white' : 'text-white/80'
+              "flex items-center space-x-1 px-1.5 py-0.5 rounded font-medium",
+              trend.isPositive
+                ? "text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400"
+                : "text-rose-700 bg-rose-50 dark:bg-rose-950/30 dark:text-rose-400"
             )}>
-              {trend.isPositive ? '↑' : '↓'} {trend.value}
+              <span>{trend.isPositive ? '▲' : '▼'}</span>
+              <span>{trend.value}</span>
             </div>
           )}
-        </div>
-
-        <div className="space-y-1">
-          <p className="text-white/80 text-sm font-medium">{title}</p>
-          <p className="text-3xl font-bold">{value}</p>
           {subtitle && (
-            <p className="text-white/70 text-xs mt-2">{subtitle}</p>
+            <span className="text-muted-foreground/80 truncate ml-2 max-w-[120px]">{subtitle}</span>
           )}
         </div>
-      </div>
-
-      {/* Shine Effect */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent" />
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -61,11 +61,11 @@ export class FieldEncryption {
 
   private deriveKey(password: string, salt: Buffer): Buffer {
     if (this.config.keyDerivation === 'scrypt') {
-      return crypto.scryptSync(password, salt, this.config.keyLength)
+      return crypto.scryptSync(password, salt as any, this.config.keyLength)
     } else {
       return crypto.pbkdf2Sync(
         password,
-        salt,
+        salt as any,
         this.config.iterations,
         this.config.keyLength,
         'sha256'
@@ -86,8 +86,8 @@ export class FieldEncryption {
       const key = this.deriveKey(this.masterKey + (contextKey || ''), salt)
 
       // Create cipher
-      const cipher = crypto.createCipher(this.config.algorithm, key)
-      cipher.setAAD(Buffer.from(contextKey || 'default'))
+      const cipher = crypto.createCipheriv(this.config.algorithm, key as any, iv as any) as crypto.CipherGCM
+      cipher.setAAD(Buffer.from(contextKey || 'default') as any)
 
       // Encrypt data
       let encrypted = cipher.update(plaintext, 'utf8', 'hex')
@@ -125,9 +125,9 @@ export class FieldEncryption {
       const key = this.deriveKey(this.masterKey + (contextKey || ''), saltBuffer)
 
       // Create decipher
-      const decipher = crypto.createDecipher(algorithm, key)
-      decipher.setAuthTag(tagBuffer)
-      decipher.setAAD(Buffer.from(contextKey || 'default'))
+      const decipher = crypto.createDecipheriv(algorithm, key as any, ivBuffer as any) as crypto.DecipherGCM
+      decipher.setAuthTag(tagBuffer as any)
+      decipher.setAAD(Buffer.from(contextKey || 'default') as any)
 
       // Decrypt data
       let decrypted = decipher.update(data, 'hex', 'utf8')

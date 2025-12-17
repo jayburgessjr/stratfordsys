@@ -4,7 +4,7 @@
  * Supports account management, portfolio positions, real-time quotes, and trading
  */
 
-import { ETrade } from 'etrade-ts';
+import ETrade from 'etrade-ts';
 
 export interface ETradeAccount {
   accountId: string;
@@ -64,7 +64,7 @@ export interface ETradePortfolio {
 }
 
 class ETradeService {
-  private client: ETrade | null = null;
+  private client: any | null = null;
   private isAuthenticated: boolean = false;
   private credentials: {
     key: string;
@@ -105,7 +105,7 @@ class ETradeService {
       consumerKey: this.credentials.key,
       consumerSecret: this.credentials.secret,
       mode,
-    });
+    } as any);
 
     // Get request token and authorization URL
     const requestToken = await this.client.getRequestToken();
@@ -325,7 +325,7 @@ class ETradeService {
         consumerKey: this.credentials.key,
         consumerSecret: this.credentials.secret,
         mode,
-      });
+      } as any);
       this.isAuthenticated = true;
     }
   }

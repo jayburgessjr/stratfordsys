@@ -3,7 +3,7 @@
  * Production-grade strategy testing and validation system
  */
 
-import { Portfolio, Money, Symbol, Quantity, Price, Percentage, Position } from '../domain/portfolio/portfolio-aggregate'
+import { Portfolio, Money, Symbol, Quantity, Price, Percentage, Position, Currency } from '../../domain/portfolio/portfolio-aggregate'
 import { prisma } from '../database/prisma'
 import { TimescaleService } from '../database/timescale'
 import { captureError } from '../monitoring/error-tracking'
@@ -227,7 +227,7 @@ export interface BacktestStatistics {
 
 export interface PlotData {
   type: 'equity_curve' | 'drawdown' | 'returns' | 'positions' | 'exposures'
-  data: Array<{ x: Date; y: number; [key: string]: any }>
+  data: Array<{ x: Date; y: number;[key: string]: any }>
   metadata?: Record<string, any>
 }
 
@@ -509,12 +509,12 @@ class BacktestingEngine {
     const data: MarketData[] = []
 
     for (const symbol of config.universe) {
-      const symbolData = await this.timescaleService.getOHLCVData(
+      const symbolData = await TimescaleService.getOHLCVData({
         symbol,
-        config.startDate,
-        config.endDate,
-        '1d'
-      )
+        startDate: config.startDate,
+        endDate: config.endDate,
+        interval: '1d'
+      })
 
       for (const point of symbolData) {
         data.push({
@@ -542,6 +542,7 @@ class BacktestingEngine {
 
     for (const signal of signals) {
       if (signal.type === 'entry' || signal.type === 'exit') {
+        if (signal.action === 'hold') continue; // Skip hold signals
         const trade = await this.executeSignal(context, signal)
         if (trade) {
           trades.push(trade)
@@ -600,7 +601,7 @@ class BacktestingEngine {
       const trade: Trade = {
         id: `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         symbol: signal.symbol,
-        action: signal.action,
+        action: signal.action === 'hold' ? 'buy' : signal.action, // Default to buy if hold (should be filtered out)
         quantity: quantity.value,
         price: executionPrice.value,
         timestamp: context.currentDate,
@@ -673,9 +674,13 @@ class BacktestingEngine {
   }
 
   private async getCurrentPrice(symbol: string, date: Date): Promise<Price | null> {
+
+
+    // ...
+
     try {
-      const data = await this.timescaleService.getLatestPrice(symbol, date)
-      return data ? new Price(data.close, 'USD', date) : null
+      const data = await TimescaleService.getLatestPrice(symbol, date)
+      return data ? new Price(data.close, Currency.USD, date) : null
     } catch {
       return null
     }
@@ -726,7 +731,7 @@ class BacktestingEngine {
         value: currentPrices.get(position.symbol.value)?.toMoney(position.quantity.value).amount || 0,
         weight: new Percentage(0), // Calculate based on total value
         unrealizedPnL: position.calculateUnrealizedPnL(
-          currentPrices.get(position.symbol.value) || new Price(0, 'USD')
+          currentPrices.get(position.symbol.value) || new Price(0, Currency.USD)
         ).amount,
       })),
       leverage: 1, // Simplified

@@ -17,9 +17,8 @@ export function QueryProvider({ children }: QueryProviderProps) {
       {children}
       {process.env['NODE_ENV'] === 'development' && (
         <ReactQueryDevtools
-          initialIsOpen={reactQueryDevtools.initialIsOpen}
-          position={reactQueryDevtools.position}
-          buttonPosition={reactQueryDevtools.buttonPosition}
+          initialIsOpen={false}
+          buttonPosition="bottom-right"
         />
       )}
     </QueryClientProvider>

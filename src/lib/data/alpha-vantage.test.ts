@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AlphaVantageClient, AlphaVantageError, createAlphaVantageClient, testAlphaVantageConnection } from './alpha-vantage';
+import { OutputSize, TimeInterval } from '@/types/market-data';
 import type { AlphaVantageResponse } from '@/types/market-data';
 
 // Mock the environment to use test API key
@@ -21,7 +22,7 @@ describe('AlphaVantageClient', () => {
 
   describe('Daily Time Series', () => {
     it('should fetch daily time series successfully', async () => {
-      const result = await client.getDailyTimeSeries('AAPL', 'compact');
+      const result = await client.getDailyTimeSeries('AAPL', OutputSize.COMPACT);
 
       expect(result).toBeDefined();
       expect(result.symbol).toBe('AAPL');
@@ -41,14 +42,14 @@ describe('AlphaVantageClient', () => {
     });
 
     it('should handle compact output size', async () => {
-      const result = await client.getDailyTimeSeries('AAPL', 'compact');
+      const result = await client.getDailyTimeSeries('AAPL', OutputSize.COMPACT);
 
       expect(result.metadata.outputSize).toBe('compact');
       expect(result.data.length).toBeLessThanOrEqual(100);
     });
 
     it('should handle full output size', async () => {
-      const result = await client.getDailyTimeSeries('AAPL', 'full');
+      const result = await client.getDailyTimeSeries('AAPL', OutputSize.FULL);
 
       expect(result.metadata.outputSize).toBe('full');
     });
@@ -80,7 +81,7 @@ describe('AlphaVantageClient', () => {
 
   describe('Intraday Time Series', () => {
     it('should fetch intraday time series successfully', async () => {
-      const result = await client.getIntradayTimeSeries('AAPL', '1min', 'compact');
+      const result = await client.getIntradayTimeSeries('AAPL', TimeInterval.MINUTE_1, OutputSize.COMPACT);
 
       expect(result).toBeDefined();
       expect(result.symbol).toBe('AAPL');
@@ -92,7 +93,7 @@ describe('AlphaVantageClient', () => {
       const intervals = ['1min', '5min', '15min', '30min', '1hour'] as const;
 
       for (const interval of intervals) {
-        const result = await client.getIntradayTimeSeries('AAPL', interval);
+        const result = await client.getIntradayTimeSeries('AAPL', interval as TimeInterval);
         expect(result.metadata.interval).toBe(interval);
       }
     });
@@ -209,7 +210,7 @@ describe('AlphaVantageClient', () => {
 
   describe('Metadata Handling', () => {
     it('should extract correct metadata', async () => {
-      const result = await client.getDailyTimeSeries('AAPL', 'compact');
+      const result = await client.getDailyTimeSeries('AAPL', OutputSize.COMPACT);
 
       expect(result.metadata.symbol).toBe('AAPL');
       expect(result.metadata.dataSource).toBe('ALPHA_VANTAGE');

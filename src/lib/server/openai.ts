@@ -7,6 +7,7 @@ import type {
   StrategyRecommendation,
   MarketAnalysis,
   PortfolioAdvice,
+  QuantumAllocation,
 } from '@/types/ai';
 
 type ChatMessage = OpenAI.Chat.ChatCompletionMessageParam;
@@ -78,7 +79,7 @@ async function createChatCompletion<T>(
     messages,
     temperature: 0.4,
     ...options,
-  });
+  }) as OpenAI.Chat.Completions.ChatCompletion;
 
   const content = response.choices[0]?.message?.content;
   if (!content) {
@@ -296,9 +297,8 @@ export async function chat(params: { userMessage: string; context?: string }): P
     messages: [
       {
         role: 'system',
-        content: `You are Stratford AI, a helpful trading assistant. Provide clear, concise answers about trading, markets, and strategies. ${
-          context || ''
-        }`,
+        content: `You are Stratford AI, a helpful trading assistant. Provide clear, concise answers about trading, markets, and strategies. ${context || ''
+          }`,
       },
       { role: 'user', content: userMessage },
     ],
@@ -349,4 +349,55 @@ Keep it educational and beginner-friendly.`,
   });
 
   return response.choices[0]?.message?.content || 'Could not generate explanation.';
+}
+
+export async function generateQuantumAllocation(params: {
+  capital: number;
+  riskTolerance: number; // 1-10
+  currentMarketData: any;
+}): Promise<QuantumAllocation> {
+  const { capital, riskTolerance, currentMarketData } = params;
+
+  const prompt = `Act as a "Quantum Wealth Agent". Optimize a portfolio for a user with:
+  
+Capital: $${capital}
+Risk Tolerance (1-10): ${riskTolerance}/10 (10 is max risk)
+Current Market Context: ${JSON.stringify(currentMarketData)}
+
+You MUST allocate across Stocks, Crypto, and Commodities.
+IF Risk Tolerance is >= 8, you MAY also allocate to "Prediction" (Kalshi) and "Lottery" (speculative).
+
+Provide the output in this EXACT JSON format:
+{
+  "allocation": [
+    { 
+       "assetClass": "Stock" | "Crypto" | "Commodity" | "Prediction" | "Lottery" | "Cash",
+       "percentage": number (0-100),
+       "reasoning": "Why this %?",
+       "recommendedAssets": ["Ticker1", "Ticker2"]
+    }
+  ],
+  "totalProjectedReturn": "e.g. 12-15% APY",
+  "riskScore": number (1-10),
+  "agentSummary": "A short paragraph explaining the macro strategy."
+}
+Ensure percentages sum to 100.`;
+
+  const model = selectModel('high', true);
+  const cacheKey = getCacheKey(model, prompt);
+  // Caching disabled for now to ensure freshness for "Quantum" feel
+  // const cached = getCached<QuantumAllocation>(cacheKey);
+  // if (cached) return cached;
+
+  const result = await createChatCompletion<QuantumAllocation>(
+    model,
+    [
+      { role: 'system', content: 'You are an advanced multi-asset portfolio architect.' },
+      { role: 'user', content: prompt }
+    ],
+    { response_format: { type: 'json_object' } }
+  );
+
+  setCached(cacheKey, result);
+  return result;
 }

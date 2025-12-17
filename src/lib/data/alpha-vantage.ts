@@ -20,10 +20,13 @@ import type {
   TimeSeriesMetadata,
   OHLCVData,
   Symbol,
-  TimeInterval,
-  OutputSize,
   AlphaVantageResponse,
   DataValidationResult,
+} from '@/types/market-data';
+import {
+  DataSource,
+  TimeInterval,
+  OutputSize,
 } from '@/types/market-data';
 
 /**
@@ -52,7 +55,7 @@ export class AlphaVantageClient {
    */
   async getDailyTimeSeries(
     symbol: Symbol,
-    outputSize: OutputSize = 'compact'
+    outputSize: OutputSize = OutputSize.COMPACT
   ): Promise<TimeSeries> {
     const startTime = performance.now();
     log.info('Fetching daily time series', { symbol, outputSize });
@@ -84,7 +87,7 @@ export class AlphaVantageClient {
       const parsedResponse = this.parseResponse(response);
 
       // Transform to our format
-      const timeSeries = this.transformToTimeSeries(parsedResponse, symbol, 'daily');
+      const timeSeries = this.transformToTimeSeries(parsedResponse, symbol, TimeInterval.DAILY);
 
       // Cache the result
       this.setCache(cacheKey, timeSeries);
@@ -110,8 +113,8 @@ export class AlphaVantageClient {
    */
   async getIntradayTimeSeries(
     symbol: Symbol,
-    interval: TimeInterval = '1min',
-    outputSize: OutputSize = 'compact'
+    interval: TimeInterval = TimeInterval.MINUTE_1,
+    outputSize: OutputSize = OutputSize.COMPACT
   ): Promise<TimeSeries> {
     const startTime = performance.now();
     log.info('Fetching intraday time series', { symbol, interval, outputSize });
@@ -337,9 +340,9 @@ export class AlphaVantageClient {
       currency: 'USD',
       timeZone: metaData['5. Time Zone'] || 'US/Eastern',
       lastRefreshed: metaData['3. Last Refreshed'],
-      dataSource: 'ALPHA_VANTAGE',
+      dataSource: DataSource.ALPHA_VANTAGE,
       interval,
-      outputSize: metaData['4. Output Size'] as OutputSize || 'compact',
+      outputSize: metaData['4. Output Size'] === 'Full size' ? OutputSize.FULL : OutputSize.COMPACT,
     };
 
     const timeSeries: TimeSeries = {

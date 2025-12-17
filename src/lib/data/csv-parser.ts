@@ -16,7 +16,7 @@ import {
   dataValidationErrorSchema,
   dataValidationWarningSchema,
 } from '@/schemas/validation';
-import type {
+import {
   CSVImportOptions,
   CSVImportResult,
   TimeSeries,
@@ -27,6 +27,11 @@ import type {
   DataValidationWarning,
   ValidationErrorType,
   ValidationWarningType,
+} from '@/types/market-data';
+import {
+  DataSource,
+  TimeInterval,
+  OutputSize,
 } from '@/types/market-data';
 import { VALIDATION_SETTINGS } from '@/constants';
 
@@ -45,7 +50,7 @@ export class CSVParser {
       low: 'Low',
       close: 'Close',
       volume: 'Volume',
-    },
+    } as any,
   };
 
   /**
@@ -125,7 +130,7 @@ export class CSVParser {
    */
   private static validateOptions(options: CSVImportOptions): CSVImportOptions {
     try {
-      return csvImportOptionsSchema.parse(options);
+      return csvImportOptionsSchema.parse(options) as any;
     } catch (error) {
       log.error('Invalid CSV options', { error });
       throw new Error('Invalid CSV import options');
@@ -181,7 +186,7 @@ export class CSVParser {
         }
 
         const ohlcv: OHLCVData = {
-          date: dateValue,
+          date: this.normalizeDate(dateValue),
           open: parseFloat(openValue),
           high: parseFloat(highValue),
           low: parseFloat(lowValue),
@@ -191,9 +196,6 @@ export class CSVParser {
             adjustedClose: parseFloat(this.extractValue(record, columnMapping.adjustedClose))
           }),
         };
-
-        // Validate date format
-        ohlcv.date = this.normalizeDate(ohlcv.date);
 
         ohlcvData.push(ohlcv);
       } catch (error) {
@@ -271,7 +273,7 @@ export class CSVParser {
 
     if (data.length === 0) {
       errors.push({
-        type: 'MISSING_REQUIRED_FIELD',
+        type: ValidationErrorType.MISSING_REQUIRED_FIELD,
         message: 'No valid data records found',
       });
 
@@ -292,7 +294,7 @@ export class CSVParser {
         // Check for duplicate dates
         if (seenDates.has(record.date)) {
           recordErrors.push({
-            type: 'DUPLICATE_DATE',
+            type: ValidationErrorType.DUPLICATE_DATE,
             message: `Duplicate date found: ${record.date}`,
             field: 'date',
             value: record.date,
@@ -304,7 +306,7 @@ export class CSVParser {
         // Check OHLC consistency
         if (record.high < Math.max(record.open, record.close, record.low)) {
           recordErrors.push({
-            type: 'OHLC_VALIDATION_FAILED',
+            type: ValidationErrorType.OHLC_VALIDATION_FAILED,
             message: 'High price is less than max(open, close, low)',
             index: i,
           });
@@ -312,7 +314,7 @@ export class CSVParser {
 
         if (record.low > Math.min(record.open, record.close, record.high)) {
           recordErrors.push({
-            type: 'OHLC_VALIDATION_FAILED',
+            type: ValidationErrorType.OHLC_VALIDATION_FAILED,
             message: 'Low price is greater than min(open, close, high)',
             index: i,
           });
@@ -323,7 +325,7 @@ export class CSVParser {
           const priceChange = Math.abs(record.open - previousClose) / previousClose;
           if (priceChange > VALIDATION_SETTINGS.MAX_DAILY_PRICE_CHANGE) {
             warnings.push({
-              type: 'LARGE_PRICE_MOVEMENT',
+              type: ValidationWarningType.LARGE_PRICE_MOVEMENT,
               message: `Large price gap detected: ${(priceChange * 100).toFixed(2)}%`,
               field: 'open',
               value: record.open,
@@ -339,7 +341,7 @@ export class CSVParser {
 
           if (record.volume > avgVolume * VALIDATION_SETTINGS.VOLUME_SPIKE_THRESHOLD) {
             warnings.push({
-              type: 'UNUSUAL_VOLUME_SPIKE',
+              type: ValidationWarningType.UNUSUAL_VOLUME_SPIKE,
               message: 'Unusual volume spike detected',
               field: 'volume',
               value: record.volume,
@@ -358,9 +360,9 @@ export class CSVParser {
 
       } catch (zodError) {
         if (zodError instanceof z.ZodError) {
-          zodError.errors.forEach(error => {
+          zodError.issues.forEach(error => {
             errors.push({
-              type: 'INVALID_DATA_TYPE',
+              type: ValidationErrorType.INVALID_DATA_TYPE,
               message: `${error.path.join('.')}: ${error.message}`,
               field: error.path.join('.'),
               value: error.code,
@@ -408,7 +410,7 @@ export class CSVParser {
       // Check for gaps > 3 days (weekend + holiday)
       if (daysDiff > VALIDATION_SETTINGS.MAX_DATA_GAP_DAYS) {
         warnings.push({
-          type: 'DATA_GAP_DETECTED',
+          type: ValidationWarningType.DATA_GAP_DETECTED,
           message: `Data gap of ${daysDiff} days detected`,
           field: 'date',
           value: `${data[i - 1].date} to ${data[i].date}`,
@@ -423,7 +425,7 @@ export class CSVParser {
    */
   private static createTimeSeries(
     symbol: string,
-    data: OHLCVData[],
+    data: readonly OHLCVData[],
     options: CSVImportOptions
   ): TimeSeries {
     const metadata: TimeSeriesMetadata = {
@@ -431,9 +433,9 @@ export class CSVParser {
       currency: 'USD', // Default assumption
       timeZone: 'America/New_York', // Default to NYSE timezone
       lastRefreshed: new Date().toISOString(),
-      dataSource: 'CSV_FILE',
-      interval: 'daily', // Default assumption
-      outputSize: 'full',
+      dataSource: DataSource.CSV_FILE,
+      interval: TimeInterval.DAILY, // Default assumption
+      outputSize: OutputSize.FULL,
     };
 
     return {

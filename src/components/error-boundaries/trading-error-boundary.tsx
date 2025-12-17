@@ -51,7 +51,7 @@ export class TradingErrorBoundary extends Component<Props, State> {
 
     // Add trading-specific breadcrumb
     addBreadcrumb({
-      category: 'trading',
+      category: 'log',
       message: `Trading error in ${operation || 'unknown'} operation`,
       level: isCriticalTradingError ? 'error' : 'warning',
       data: {
@@ -286,9 +286,8 @@ This is an automated error report from Stratford AI Trading Platform.
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={this.handleRefresh}
-              className={`flex-1 ${
-                isTrading ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'
-              } text-white font-medium py-2 px-4 rounded transition-colors flex items-center justify-center gap-2`}
+              className={`flex-1 ${isTrading ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'
+                } text-white font-medium py-2 px-4 rounded transition-colors flex items-center justify-center gap-2`}
             >
               <RefreshCw className="h-4 w-4" />
               Retry Operation

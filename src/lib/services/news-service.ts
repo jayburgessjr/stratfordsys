@@ -3,6 +3,7 @@
  */
 
 import type { NewsArticle } from '@/types/news';
+export type { NewsArticle };
 
 interface CacheEntry {
   data: NewsArticle[];

@@ -106,7 +106,7 @@ export const alphaVantageDataPointSchema = z.object({
   '6. adjusted close': z.string().optional(),
 });
 
-export const alphaVantageTimeSeriesSchema = z.record(alphaVantageDataPointSchema);
+export const alphaVantageTimeSeriesSchema = z.record(z.string(), alphaVantageDataPointSchema);
 
 export const alphaVantageResponseSchema = z.object({
   'Meta Data': alphaVantageMetaDataSchema,
@@ -133,7 +133,7 @@ export const parameterValueSchema = z.union([
   z.array(z.union([z.string(), z.number(), z.boolean()]))
 ]);
 
-export const strategyParametersSchema = z.record(parameterValueSchema);
+export const strategyParametersSchema = z.record(z.string(), parameterValueSchema);
 
 export const movingAverageCrossoverParametersSchema = z.object({
   shortPeriod: z.number().int().min(1).max(200),
@@ -190,8 +190,8 @@ export const signalStrengthSchema = z.enum([
 ]);
 
 export const signalMetadataSchema = z.object({
-  indicators: z.record(z.number()),
-  conditions: z.record(z.boolean()),
+  indicators: z.record(z.string(), z.number()),
+  conditions: z.record(z.string(), z.boolean()),
   notes: z.string().optional(),
 });
 

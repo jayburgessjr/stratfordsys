@@ -44,10 +44,10 @@ function RiskTooltip({ active, payload, label }: RiskTooltipProps) {
             {entry.name}: {
               entry.name.includes('%') || entry.name.includes('Drawdown') || entry.name.includes('Return')
                 ? new Intl.NumberFormat('en-US', {
-                    style: 'percent',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  }).format(entry.value)
+                  style: 'percent',
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                }).format(entry.value)
                 : entry.value.toFixed(3)
             }
           </p>
@@ -97,30 +97,38 @@ export function RiskAnalysis() {
     switch (view) {
       case 'drawdown':
         // Drawdown over time
-        return backtestResult.equityCurve.map((value, index) => {
-          const peak = backtestResult.equityCurve.slice(0, index + 1).reduce((max, val) => Math.max(max, val), value);
-          const drawdown = peak > 0 ? (peak - value) / peak : 0;
-          const date = backtestResult.equity[index]?.date || `Day ${index + 1}`;
+        return backtestResult.equity.map((point: any, index: number) => {
+          const currentValue = point.value;
+          const peak = backtestResult.equity
+            .slice(0, index + 1)
+            .reduce((max: number, p: any) => Math.max(max, p.value), currentValue);
+
+          const drawdown = peak > 0 ? (peak - currentValue) / peak : 0;
+          const date = point.date || `Day ${index + 1}`;
 
           return {
             date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             'Drawdown %': drawdown,
-            'Equity Value': value,
+            'Equity Value': currentValue,
             'Peak Value': peak
           };
         });
 
       case 'volatility':
         // Rolling volatility calculation (simplified)
-        const returns = backtestResult.equityCurve.map((value, index) =>
-          index > 0 ? (value - backtestResult.equityCurve[index - 1]) / backtestResult.equityCurve[index - 1] : 0
-        );
+        // returns array of daily returns
+        const dailyReturns = backtestResult.equity.map((point: any, index: number) => {
+          if (index === 0) return 0;
+          const currentVal = point.value;
+          const prevVal = backtestResult.equity[index - 1].value;
+          return (currentVal - prevVal) / prevVal;
+        });
 
         const windowSize = 30; // 30-day rolling window
-        return returns.map((_, index) => {
+        return dailyReturns.map((_, index) => {
           if (index < windowSize) return null;
 
-          const windowReturns = returns.slice(index - windowSize, index);
+          const windowReturns = dailyReturns.slice(index - windowSize, index);
           const mean = windowReturns.reduce((sum, ret) => sum + ret, 0) / windowReturns.length;
           const variance = windowReturns.reduce((sum, ret) => sum + Math.pow(ret - mean, 2), 0) / windowReturns.length;
           const volatility = Math.sqrt(variance * 252); // Annualized
@@ -130,7 +138,7 @@ export function RiskAnalysis() {
           return {
             date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             'Rolling Volatility': volatility,
-            'Daily Return': returns[index]
+            'Daily Return': dailyReturns[index]
           };
         }).filter(Boolean);
 
@@ -165,22 +173,27 @@ export function RiskAnalysis() {
 
       case 'distribution':
         // Return distribution histogram
-        const dailyReturns = backtestResult.equityCurve.map((value, index) =>
-          index > 0 ? (value - backtestResult.equityCurve[index - 1]) / backtestResult.equityCurve[index - 1] : 0
-        ).filter(ret => ret !== 0);
+        const returnsForDist = backtestResult.equity.map((point: any, index: number) => {
+          if (index === 0) return 0;
+          const currentVal = point.value;
+          const prevVal = backtestResult.equity[index - 1].value;
+          return (currentVal - prevVal) / prevVal;
+        }).filter(ret => ret !== 0);
 
         // Create histogram bins
-        const minReturn = Math.min(...dailyReturns);
-        const maxReturn = Math.max(...dailyReturns);
+        const minReturn = Math.min(...returnsForDist);
+        const maxReturn = Math.max(...returnsForDist);
         const binCount = 20;
-        const binSize = (maxReturn - minReturn) / binCount;
+        // Avoid division by zero if flat
+        const spread = maxReturn - minReturn;
+        const binSize = spread > 0 ? spread / binCount : 0.01;
 
         const histogram = Array.from({ length: binCount }, (_, i) => {
           const binStart = minReturn + i * binSize;
           const binEnd = binStart + binSize;
           const binCenter = (binStart + binEnd) / 2;
 
-          const count = dailyReturns.filter(ret => ret >= binStart && ret < binEnd).length;
+          const count = returnsForDist.filter(ret => ret >= binStart && ret < binEnd).length;
 
           return {
             bin: `${(binCenter * 100).toFixed(1)}%`,
@@ -269,14 +282,14 @@ export function RiskAnalysis() {
             <RadialBarChart
               innerRadius="30%"
               outerRadius="80%"
-              data={chartData.map((item, index) => ({
+              data={chartData.map((item: any) => ({
                 ...item,
                 fill: item.status === 'good' ? '#22c55e' : '#f59e0b'
               }))}
               startAngle={90}
               endAngle={-270}
             >
-              <RadialBar dataKey="value" cornerRadius={10} />
+              <RadialBar dataKey="value" cornerRadius={10} background />
               <Legend
                 iconSize={10}
                 layout="vertical"

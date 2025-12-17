@@ -11,6 +11,7 @@ import {
   executeMovingAverageCrossoverStrategy
 } from './moving-average-crossover';
 import type { TimeSeries, OHLCVData } from '@/types/market-data';
+import { DataSource, TimeInterval, OutputSize } from '@/types/market-data';
 import type { StrategyConfig } from '@/types/strategy';
 import {
   MovingAverageType,
@@ -77,9 +78,9 @@ describe('Moving Average Crossover Strategy', () => {
         currency: 'USD',
         timeZone: 'America/New_York',
         lastRefreshed: new Date().toISOString(),
-        dataSource: 'CSV_FILE',
-        interval: 'daily',
-        outputSize: 'full'
+        dataSource: DataSource.CSV_FILE,
+        interval: TimeInterval.DAILY,
+        outputSize: OutputSize.FULL
       }
     };
 
@@ -88,14 +89,14 @@ describe('Moving Average Crossover Strategy', () => {
 
   describe('Strategy Configuration', () => {
     it('should create valid strategy configuration', () => {
-      const config = createMovingAverageCrossoverStrategy(20, 50, 'EXPONENTIAL', 1);
+      const config = createMovingAverageCrossoverStrategy(20, 50, MovingAverageType.EXPONENTIAL, 1);
 
       expect(config.id).toBeDefined();
       expect(config.name).toContain('MA Crossover 20/50');
       expect(config.type).toBe(StrategyType.MOVING_AVERAGE_CROSSOVER);
       expect(config.parameters.shortPeriod).toBe(20);
       expect(config.parameters.longPeriod).toBe(50);
-      expect(config.parameters.maType).toBe('EXPONENTIAL');
+      expect(config.parameters.maType).toBe(MovingAverageType.EXPONENTIAL);
       expect(config.parameters.signalDelay).toBe(1);
       expect(config.riskManagement.maxPositionSize).toBeDefined();
       expect(config.metadata.isActive).toBe(true);
@@ -106,8 +107,73 @@ describe('Moving Average Crossover Strategy', () => {
 
       expect(config.parameters.shortPeriod).toBe(20);
       expect(config.parameters.longPeriod).toBe(50);
-      expect(config.parameters.maType).toBe('SIMPLE');
+      expect(config.parameters.maType).toBe(MovingAverageType.SIMPLE);
       expect(config.parameters.signalDelay).toBe(0);
+    });
+
+    // ...
+
+    it('should work with Simple Moving Average', () => {
+      const config = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.SIMPLE);
+      const strategy = new MovingAverageCrossoverStrategy(config);
+      const result = strategy.execute(timeSeries);
+
+      expect(result.signals.length).toBeGreaterThanOrEqual(0);
+      expect(result.performance).toBeDefined();
+    });
+
+    it('should work with Exponential Moving Average', () => {
+      const config = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.EXPONENTIAL);
+      const strategy = new MovingAverageCrossoverStrategy(config);
+      const result = strategy.execute(timeSeries);
+
+      expect(result.signals.length).toBeGreaterThanOrEqual(0);
+      expect(result.performance).toBeDefined();
+    });
+
+    it('should work with Weighted Moving Average', () => {
+      const config = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.WEIGHTED);
+      const strategy = new MovingAverageCrossoverStrategy(config);
+      const result = strategy.execute(timeSeries);
+
+      expect(result.signals.length).toBeGreaterThanOrEqual(0);
+      expect(result.performance).toBeDefined();
+    });
+
+    it('should produce different results for different MA types', () => {
+      const configSMA = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.SIMPLE);
+      const configEMA = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.EXPONENTIAL);
+
+      const strategySMA = new MovingAverageCrossoverStrategy(configSMA);
+      const strategyEMA = new MovingAverageCrossoverStrategy(configEMA);
+
+      const resultSMA = strategySMA.execute(timeSeries);
+      const resultEMA = strategyEMA.execute(timeSeries);
+
+      // ...
+    });
+
+    // ...
+
+    describe('Signal Delay', () => {
+      it('should apply signal delay correctly', () => {
+        const configNoDelay = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.SIMPLE, 0);
+        const configWithDelay = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.SIMPLE, 2);
+
+        // ...
+      });
+    });
+
+    describe('Convenience Functions', () => {
+      it('should execute strategy using convenience function', async () => {
+        const result = await executeMovingAverageCrossoverStrategy(timeSeries, {
+          shortPeriod: 5,
+          longPeriod: 10,
+          maType: MovingAverageType.SIMPLE
+        });
+
+        // ...
+      });
     });
 
     it('should validate parameter constraints', () => {
@@ -247,7 +313,7 @@ describe('Moving Average Crossover Strategy', () => {
 
   describe('Different Moving Average Types', () => {
     it('should work with Simple Moving Average', () => {
-      const config = createMovingAverageCrossoverStrategy(5, 10, 'SIMPLE');
+      const config = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.SIMPLE);
       const strategy = new MovingAverageCrossoverStrategy(config);
       const result = strategy.execute(timeSeries);
 
@@ -256,7 +322,7 @@ describe('Moving Average Crossover Strategy', () => {
     });
 
     it('should work with Exponential Moving Average', () => {
-      const config = createMovingAverageCrossoverStrategy(5, 10, 'EXPONENTIAL');
+      const config = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.EXPONENTIAL);
       const strategy = new MovingAverageCrossoverStrategy(config);
       const result = strategy.execute(timeSeries);
 
@@ -265,7 +331,7 @@ describe('Moving Average Crossover Strategy', () => {
     });
 
     it('should work with Weighted Moving Average', () => {
-      const config = createMovingAverageCrossoverStrategy(5, 10, 'WEIGHTED');
+      const config = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.WEIGHTED);
       const strategy = new MovingAverageCrossoverStrategy(config);
       const result = strategy.execute(timeSeries);
 
@@ -274,8 +340,8 @@ describe('Moving Average Crossover Strategy', () => {
     });
 
     it('should produce different results for different MA types', () => {
-      const configSMA = createMovingAverageCrossoverStrategy(5, 10, 'SIMPLE');
-      const configEMA = createMovingAverageCrossoverStrategy(5, 10, 'EXPONENTIAL');
+      const configSMA = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.SIMPLE);
+      const configEMA = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.EXPONENTIAL);
 
       const strategySMA = new MovingAverageCrossoverStrategy(configSMA);
       const strategyEMA = new MovingAverageCrossoverStrategy(configEMA);
@@ -291,8 +357,8 @@ describe('Moving Average Crossover Strategy', () => {
 
   describe('Signal Delay', () => {
     it('should apply signal delay correctly', () => {
-      const configNoDelay = createMovingAverageCrossoverStrategy(5, 10, 'SIMPLE', 0);
-      const configWithDelay = createMovingAverageCrossoverStrategy(5, 10, 'SIMPLE', 2);
+      const configNoDelay = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.SIMPLE, 0);
+      const configWithDelay = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.SIMPLE, 2);
 
       const strategyNoDelay = new MovingAverageCrossoverStrategy(configNoDelay);
       const strategyWithDelay = new MovingAverageCrossoverStrategy(configWithDelay);
@@ -367,7 +433,7 @@ describe('Moving Average Crossover Strategy', () => {
       const result = await executeMovingAverageCrossoverStrategy(timeSeries, {
         shortPeriod: 5,
         longPeriod: 10,
-        maType: 'SIMPLE'
+        maType: MovingAverageType.SIMPLE
       });
 
       expect(result.signals).toBeInstanceOf(Array);

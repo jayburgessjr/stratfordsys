@@ -5,6 +5,7 @@ import { BacktestEngine, createBacktestConfig } from '@/lib/backtesting/backtest
 import { createMovingAverageCrossoverStrategy } from '@/lib/strategies/moving-average-crossover';
 import { generateDemoTimeSeries } from '@/utils/demo-data';
 import type { BacktestResult } from '@/types';
+import { MovingAverageType } from '@/types/strategy';
 
 interface UseDemoBacktestReturn {
   backtestResult: BacktestResult | null;
@@ -27,26 +28,19 @@ export function useDemoBacktest(): UseDemoBacktestReturn {
       const timeSeries = generateDemoTimeSeries();
 
       // Create strategy configuration
-      const strategy = createMovingAverageCrossoverStrategy(20, 50, 'SIMPLE', 0);
+      const strategy = createMovingAverageCrossoverStrategy(20, 50, MovingAverageType.SIMPLE, 0);
 
       // Create backtest configuration
-      const backtestConfig = createBacktestConfig({
+      const backtestConfig = createBacktestConfig(
         strategy,
-        symbol: 'DEMO',
-        period: {
+        'AAPL',
+        {
           start: timeSeries.data[0].date,
           end: timeSeries.data[timeSeries.data.length - 1].date
         },
-        initialCapital: 100000,
-        commission: {
-          type: 'PERCENTAGE',
-          value: 0.001 // 0.1%
-        },
-        slippage: {
-          type: 'PERCENTAGE',
-          value: 0.0005 // 0.05%
-        }
-      });
+        100000,
+        {}
+      );
 
       // Run backtest
       const engine = new BacktestEngine(backtestConfig);

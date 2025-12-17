@@ -16,12 +16,15 @@ import type {
   PerformanceAnalysis,
   EquityPoint,
   BacktestMetadata,
+} from '@/types/backtest';
+import {
   Trade,
   Position,
   StrategySignal,
-} from '@/types/backtest';
+  StrategyConfig
+} from '@/types/strategy';
+import { CommissionType, SlippageType } from '@/types/backtest';
 import type { TimeSeries } from '@/types/market-data';
-import type { StrategyConfig } from '@/types/strategy';
 
 /**
  * Backtesting Engine for strategy evaluation
@@ -87,7 +90,7 @@ export class BacktestEngine {
       const execution = this.createExecutionDetails(timeSeries, startTime);
 
       // Calculate performance metrics
-      const performance = this.calculatePerformance(timeSeries);
+      const performanceMetrics = this.calculatePerformance(timeSeries);
 
       // Create metadata
       const metadata = this.createMetadata();
@@ -98,7 +101,7 @@ export class BacktestEngine {
         symbol: this.config.symbol,
         period: this.config.period,
         execution,
-        performance,
+        performance: performanceMetrics,
         trades: this.trades,
         positions: this.positions,
         signals: this.signals,
@@ -313,7 +316,7 @@ export class BacktestEngine {
       ? equityCurve[equityCurve.length - 1]
       : this.config.initialCapital;
 
-    const backtestResult: BacktestResult = {
+    const backtestResult: any = {
       strategy: this.config.strategy.id,
       symbol: this.config.symbol,
       startDate: timeSeries.data[0]?.date || '',
@@ -397,11 +400,11 @@ export function createBacktestConfig(
     period,
     initialCapital,
     commission: {
-      type: 'PERCENTAGE',
+      type: CommissionType.PERCENTAGE,
       value: 0.001, // 0.1%
     },
     slippage: {
-      type: 'PERCENTAGE',
+      type: SlippageType.PERCENTAGE,
       value: 0.0005, // 0.05%
     },
     seed: 42,

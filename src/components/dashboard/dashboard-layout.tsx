@@ -1,10 +1,11 @@
 'use client';
 
-import { ReactNode, useMemo } from 'react';
+import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Settings, BarChart3, Activity, TrendingUp, Database, Shield, Zap, Target, Dice1, Bitcoin, Lightbulb } from 'lucide-react';
+import { Settings, BarChart3, TrendingUp, Database, Shield, Lightbulb, Zap, Menu, Globe } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -12,114 +13,147 @@ interface DashboardLayoutProps {
 }
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: BarChart3, description: 'Financial Overview' },
-  { href: '/strategy/', label: 'Strategy', icon: Lightbulb, description: 'Daily Multi-Market Plan' },
-  { href: '/trading/', label: 'Stocks', icon: TrendingUp, description: 'Stock Trading' },
-  { href: '/crypto/', label: 'Crypto', icon: Bitcoin, description: 'Cryptocurrency' },
-  { href: '/lottery/', label: 'Lottery', icon: Target, description: 'Number Analytics' },
-  { href: '/gambling/', label: 'Gambling', icon: Dice1, description: 'Sports & Casino' },
-  { href: '/portfolio/', label: 'Portfolio', icon: Database, description: 'Asset Management' },
-  { href: '/agents/', label: 'Agents', icon: Zap, description: 'AI Management' },
-  { href: '/security/', label: 'Security', icon: Shield, description: 'Risk & Compliance' },
-  { href: '/settings/', label: 'Settings', icon: Settings, description: 'System Configuration' },
+  { href: '/', label: 'Overview', icon: BarChart3 },
+  { href: '/quantum/', label: 'Quantum', icon: Zap },
+  { href: '/strategy/', label: 'Strategy', icon: Lightbulb },
+  { href: '/trading/', label: 'Markets', icon: TrendingUp },
+  { href: '/news/', label: 'News', icon: Globe },
+  { href: '/portfolio/', label: 'Portfolio', icon: Database },
+  { href: '/security/', label: 'Security', icon: Shield },
+  { href: '/settings/', label: 'Settings', icon: Settings },
 ];
 
 export function DashboardLayout({ children, className }: DashboardLayoutProps) {
   const pathname = usePathname();
 
-  // Memoize current page to prevent re-renders
-  const currentPage = useMemo(() => {
-    const normalizedPathname = pathname === '/' ? '/' : pathname.endsWith('/') ? pathname : pathname + '/';
-    return navItems.find(item => {
-      const normalizedHref = item.href.endsWith('/') ? item.href : item.href + '/';
-      return normalizedPathname === normalizedHref || (item.href === '/' && pathname === '/');
-    }) || navItems[0];
-  }, [pathname]);
-
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left Sidebar Navigation */}
-      <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-white border-r shadow-sm flex flex-col">
-        {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b">
+    <div className="h-screen w-screen overflow-hidden flex bg-transparent font-sans">
+      {/* Cosmic Glass Sidebar */}
+      <aside className="fixed left-4 top-4 bottom-4 z-40 w-64 rounded-2xl border border-white/5 bg-black/40 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden hidden md:flex transition-all duration-300 group hover:bg-black/50 hover:shadow-primary/5">
+
+        {/* Glow Effects */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50" />
+        <div className="absolute -left-10 top-0 w-20 h-20 bg-primary/20 blur-3xl rounded-full pointer-events-none" />
+
+        {/* Logo Area */}
+        <div className="p-6 mb-2 relative">
           <Link href="/">
-            <div className="flex items-center space-x-3 cursor-pointer">
-              <div className="h-10 w-10 rounded-xl bg-gradient-blue flex items-center justify-center shadow-lg">
+            <div className="flex items-center gap-3 group/logo">
+              <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg shadow-primary/25 group-hover/logo:scale-105 transition-transform duration-300">
                 <TrendingUp className="h-5 w-5 text-white" />
+                <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/20" />
               </div>
-              <div>
-                <div className="font-bold text-lg bg-gradient-blue bg-clip-text text-transparent">Stratford AI</div>
-                <div className="text-xs text-muted-foreground">Wealth Engine</div>
+              <div className="flex flex-col">
+                <span className="font-bold text-xl tracking-tight text-white group-hover/logo:text-primary transition-colors">Stratford</span>
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Wealth Engine</span>
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Navigation Links */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <div className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              // Normalize both paths for comparison (handle trailing slashes)
-              const normalizedPathname = pathname.endsWith('/') ? pathname : pathname + '/';
-              const normalizedHref = item.href.endsWith('/') ? item.href : item.href + '/';
-              const isActive = normalizedPathname === normalizedHref ||
-                               (item.href === '/' && pathname === '/');
-              return (
-                <Link key={item.href} href={item.href}>
-                  <div
+        {/* Navigation */}
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto py-2">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/');
+            const Icon = item.icon;
+
+            return (
+              <Link key={item.href} href={item.href as any} className="block group/item">
+                <div
+                  className={cn(
+                    "relative flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 border border-transparent",
+                    isActive
+                      ? "bg-primary/10 text-white border-primary/20 shadow-[0_0_15px_-5px_hsl(var(--primary)/0.5)]"
+                      : "text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/5"
+                  )}
+                >
+                  <Icon
                     className={cn(
-                      "flex items-center space-x-3 px-4 py-3 rounded-lg transition-all cursor-pointer",
-                      isActive
-                        ? "bg-gradient-blue text-white shadow-md"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      "h-5 w-5 transition-transform duration-300 group-hover/item:scale-110",
+                      isActive ? "text-primary drop-shadow-[0_0_8px_hsl(var(--primary)/0.8)]" : "text-zinc-500 group-hover/item:text-zinc-300"
                     )}
-                  >
-                    <Icon className="h-5 w-5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{item.label}</div>
-                      <div className={cn(
-                        "text-xs",
-                        isActive ? "text-white/80" : "text-muted-foreground"
-                      )}>
-                        {item.description}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+                  />
+                  <span>{item.label}</span>
+
+                  {/* Active Indicator */}
+                  {isActive && (
+                    <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* Status Footer */}
-        <div className="p-4 border-t">
-          <div className="flex items-center space-x-3 bg-green-50 px-4 py-3 rounded-lg">
-            <Activity className="h-5 w-5 text-green-500 animate-pulse" />
-            <div>
-              <div className="text-sm font-semibold text-green-700">LIVE</div>
-              <div className="text-xs text-muted-foreground">v1.0.0</div>
+        {/* System Status / Footer */}
+        <div className="p-4 mt-auto">
+          <div className="rounded-xl bg-gradient-to-br from-white/5 to-transparent p-4 border border-white/5 relative overflow-hidden group/status">
+            <div className="absolute top-0 right-0 p-2 opacity-50 group-hover/status:opacity-100 transition-opacity">
+              <div className="w-16 h-16 bg-emerald-500/10 rounded-full blur-xl -mr-8 -mt-8" />
+            </div>
+
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="relative">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="absolute inset-0 h-2 w-2 rounded-full bg-emerald-500 animate-ping opacity-50" />
+              </div>
+              <span className="text-xs font-medium text-emerald-400">System Operational</span>
+            </div>
+            <div className="flex justify-between items-end">
+              <span className="text-[10px] text-zinc-500">v2.4.0-quantum</span>
+              <span className="text-[10px] text-zinc-600">Lat: 12ms</span>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 ml-64">
-        {/* Top Header */}
-        <header className="sticky top-0 z-30 h-16 bg-white border-b shadow-sm flex items-center px-6">
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold text-foreground">
-              {currentPage.label}
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {currentPage.description}
-            </p>
+      {/* Mobile Header (Visible only on small screens) */}
+      <div className="md:hidden fixed top-0 w-full z-50 p-4">
+        <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-xl p-3 flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-bold text-white">Stratford</span>
           </div>
-        </header>
+          <Button variant="ghost" size="icon" className="text-white">
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
 
-        {/* Page Content */}
-        <main className={cn('px-6 py-6', className)}>
+      {/* Main Content Area */}
+      <div className="flex-1 md:ml-[280px] p-4 flex flex-col h-screen overflow-hidden">
+        {/* Floating Ticker */}
+        <div className="h-10 mb-4 rounded-xl bg-black/40 backdrop-blur-md border border-white/5 flex items-center overflow-hidden relative shadow-lg flex-shrink-0">
+          <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-black/80 to-transparent z-10" />
+          <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/80 to-transparent z-10" />
+
+          <div className="animate-ticker flex items-center space-x-12 px-4 whitespace-nowrap text-xs font-medium font-mono">
+            {[
+              { s: 'SPY', p: '412.35', c: 0.45, up: true },
+              { s: 'QQQ', p: '348.12', c: 0.82, up: true },
+              { s: 'BTC', p: '64,230', c: 2.1, up: true },
+              { s: 'ETH', p: '3,450', c: 1.8, up: true },
+              { s: 'VIX', p: '14.12', c: 3.2, up: false },
+              { s: 'AAPL', p: '173.50', c: 0.3, up: true },
+              { s: 'TSLA', p: '240.20', c: 1.1, up: false },
+              { s: 'US10Y', p: '4.12', c: 0.05, up: true },
+              { s: 'NVDA', p: '875.30', c: 4.2, up: true },
+              { s: 'SOL', p: '145.20', c: 5.5, up: true },
+            ].map((t, i) => (
+              <span key={i} className="flex items-center gap-2">
+                <span className="text-zinc-500 font-bold">{t.s}</span>
+                <span className="text-zinc-200">{t.p}</span>
+                <span className={cn(t.up ? "text-emerald-400" : "text-rose-400", "flex items-center gap-1")}>
+                  {t.up ? '▲' : '▼'} {t.c}%
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <main className={cn('flex-1 w-full max-w-7xl mx-auto flex flex-col min-h-0 overflow-hidden', className)}>
           {children}
         </main>
       </div>

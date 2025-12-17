@@ -155,8 +155,10 @@ export interface Position {
   readonly entryPrice: Price;
   readonly quantity: number;
   readonly currentPrice?: Price;
-  readonly currentValue?: Price;
-  readonly unrealizedPnL?: Price;
+  readonly currentValue: Price;
+  readonly unrealizedPnL?: number;
+  readonly realizedPnL?: number;
+  readonly exitDate?: DateString;
   readonly status: PositionStatus;
   readonly strategy: string; // Strategy ID
 }

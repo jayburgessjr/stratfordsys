@@ -8,9 +8,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { BacktestEngine, createBacktestConfig } from '@/lib/backtesting/backtest-engine';
 import { createMovingAverageCrossoverStrategy } from '@/lib/strategies/moving-average-crossover';
-import { PerformanceAnalyzer } from '@/lib/analysis/performance-analyzer';
+import { MovingAverageType } from '@/types/strategy';
 import { generateDemoTimeSeries } from '@/utils/demo-data';
-import type { TimeSeries, BacktestResult } from '@/types';
+import type { TimeSeries } from '@/types';
 
 describe('Backtest Engine Integration', () => {
   let timeSeries: TimeSeries;
@@ -21,7 +21,7 @@ describe('Backtest Engine Integration', () => {
     timeSeries = generateDemoTimeSeries('INTEG', 100, 100); // Simple 100-day dataset
 
     // Create strategy configuration
-    const strategy = createMovingAverageCrossoverStrategy(5, 10, 'SIMPLE', 0); // Shorter periods for more signals
+    const strategy = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.SIMPLE, 0); // Shorter periods for more signals
 
     // Create backtest configuration
     const backtestConfig = createBacktestConfig(
@@ -187,7 +187,7 @@ describe('Backtest Engine Integration', () => {
 
   describe('Configuration Validation', () => {
     it('should validate backtest configuration', () => {
-      const strategy = createMovingAverageCrossoverStrategy(5, 10, 'SIMPLE', 0);
+      const strategy = createMovingAverageCrossoverStrategy(5, 10, MovingAverageType.SIMPLE, 0);
 
       // Invalid initial capital
       expect(() => {

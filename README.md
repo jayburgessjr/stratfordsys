@@ -136,8 +136,7 @@ stratford_ai/
 │   │   ├── 💼 Business Logic
 │   │   │   ├── domain/             # Domain-driven design
 │   │   │   ├── lib/trading/        # Trading engine
-│   │   │   ├── lib/ml/             # AI/ML integration
-│   │   │   └── lib/compliance/     # KYC/AML/compliance
+│   │   │   └── lib/ml/             # AI/ML integration
 │   │   │
 │   │   ├── 🗄️ Data Layer
 │   │   │   ├── lib/database/       # Database services
@@ -172,12 +171,6 @@ stratford_ai/
 - **Portfolio Management**: Multi-asset portfolio tracking with risk management
 - **Performance Analytics**: Comprehensive performance metrics and attribution analysis
 
-### 🏛️ Regulatory Compliance
-- **KYC/AML**: Automated Know Your Customer and Anti-Money Laundering workflows
-- **Audit Trails**: Complete audit logging for all user actions and system events
-- **Data Retention**: Automated data retention policies (SEC: 7 years, FINRA: 3-5 years)
-- **Regulatory Reporting**: Automated SAR filing and regulatory report generation
-- **GDPR Compliance**: Data portability, right to erasure, and privacy by design
 
 ### 🗄️ Multi-Database Architecture
 - **PostgreSQL**: Transactional data (users, portfolios, trades)
@@ -223,34 +216,7 @@ export default withRateLimit({
 })(handler)
 ```
 
-## 🏛️ Compliance
 
-### KYC/AML Workflow
-```typescript
-// Automated KYC verification
-import { kycAMLService } from '@/lib/compliance/kyc-aml'
-
-const kycRecord = await kycAMLService.submitKYC(userId, {
-  fullName: 'John Doe',
-  dateOfBirth: new Date('1990-01-01'),
-  // ... other required fields
-})
-
-// Automatic AML screening
-const amlAssessment = await kycAMLService.performAMLScreening(userId, kycData)
-```
-
-### Data Retention
-```typescript
-// Automated data retention policies
-import { dataRetentionService } from '@/lib/compliance/data-retention'
-
-// Initialize retention policies
-await dataRetentionService.initializeRetentionPolicies()
-
-// Start automated monitoring
-dataRetentionService.startRetentionMonitoring()
-```
 
 ## 🧪 Testing
 

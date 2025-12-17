@@ -524,7 +524,7 @@ class ErrorTrackingService {
   }
 
   private generateTags(error: Error, category: ErrorCategory): string[] {
-    const tags = [category]
+    const tags: string[] = [category]
 
     const message = error.message.toLowerCase()
 
@@ -577,7 +577,7 @@ class ErrorTrackingService {
     }, this.flushInterval)
   }
 
-  private async flushErrors(): void {
+  private async flushErrors(): Promise<void> {
     if (this.errorQueue.length === 0) return
 
     const errors = [...this.errorQueue]
@@ -645,7 +645,7 @@ class ErrorTrackingService {
               component: 'fetch',
               action: 'http_error',
               metadata: {
-                url: typeof args[0] === 'string' ? args[0] : args[0].url,
+                url: typeof args[0] === 'string' ? args[0] : (args[0] instanceof URL ? args[0].href : args[0].url),
                 status: response.status,
                 statusText: response.statusText,
               }
@@ -659,7 +659,7 @@ class ErrorTrackingService {
           component: 'fetch',
           action: 'network_error',
           metadata: {
-            url: typeof args[0] === 'string' ? args[0] : args[0].url,
+            url: typeof args[0] === 'string' ? args[0] : (args[0] instanceof URL ? args[0].href : args[0].url),
           }
         })
         throw error

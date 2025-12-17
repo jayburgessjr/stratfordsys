@@ -12,12 +12,30 @@ import type {
   Percentage,
   DateRange,
 } from './market-data';
-import type {
+import {
+  type StrategyConfig,
+  type Trade,
+  type Position,
+  type StrategySignal,
+  type CommissionConfig,
+  CommissionType,
+  type SlippageConfig,
+  SlippageType,
+} from './strategy';
+
+export {
+  CommissionType,
+  SlippageType,
+};
+
+export type {
   StrategyConfig,
   Trade,
   Position,
   StrategySignal,
-} from './strategy';
+  CommissionConfig,
+  SlippageConfig,
+};
 
 // Main backtest result structure
 export interface BacktestResult {
@@ -66,6 +84,14 @@ export interface ReturnAnalysis {
   readonly monthlyReturns: readonly MonthlyReturn[];
   readonly yearlyReturns: readonly YearlyReturn[];
   readonly cumulativeReturns: readonly CumulativeReturn[];
+  readonly averageReturn: Percentage;
+  readonly volatility: Percentage;
+  readonly skewness: number;
+  readonly kurtosis: number;
+  readonly positiveReturns: number;
+  readonly negativeReturns: number;
+  readonly largestGain: Percentage;
+  readonly largestLoss: Percentage;
 }
 
 export interface MonthlyReturn {
@@ -95,9 +121,14 @@ export interface CumulativeReturn {
 export interface RiskAnalysis {
   readonly volatility: Percentage; // Annualized
   readonly downside: DownsideRisk;
-  readonly valueAtRisk: ValueAtRisk;
+  readonly valueAtRisk: number; // Changed to match test expectation (number)
+  readonly conditionalVaR: number;
   readonly beta?: number; // If benchmark provided
   readonly correlation?: number; // If benchmark provided
+  readonly trackingError: number;
+  readonly informationRatio: number;
+  readonly sortinoRatio: number;
+  readonly calmarRatio: number;
 }
 
 export interface DownsideRisk {
@@ -136,6 +167,11 @@ export interface TradingAnalysis {
   readonly averageHoldingPeriod: number; // Days
   readonly tradingFrequency: TradingFrequency;
   readonly commission: TradingCosts;
+  readonly hitRate: Percentage;
+  readonly averageTradeReturn: Percentage;
+  readonly averageWinningTrade: Price;
+  readonly averageLosingTrade: Price;
+  readonly turnoverRate: number;
 }
 
 export interface TradingFrequency {
@@ -171,6 +207,8 @@ export interface DrawdownAnalysis {
   readonly averageDrawdownDuration: number;
   readonly drawdownPeriods: readonly DrawdownPeriod[];
   readonly recovery: RecoveryAnalysis;
+  readonly recoveryFactor: number;
+  readonly ulcerIndex: number;
 }
 
 export interface DrawdownPeriod {
@@ -309,17 +347,7 @@ export interface BacktestOptions {
   readonly interestRate: Percentage;
 }
 
-export interface CommissionConfig {
-  readonly type: 'FIXED' | 'PERCENTAGE' | 'PER_SHARE';
-  readonly value: number;
-  readonly minimum?: number;
-  readonly maximum?: number;
-}
 
-export interface SlippageConfig {
-  readonly type: 'FIXED' | 'PERCENTAGE' | 'DYNAMIC';
-  readonly value: number;
-}
 
 // Validation and status
 export interface BacktestValidation {

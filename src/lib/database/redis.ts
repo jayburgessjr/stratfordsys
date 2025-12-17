@@ -23,9 +23,9 @@ export interface SessionData {
 
 export class RedisService {
   private static instance: RedisService
-  private redis: RedisType
-  private pubRedis: RedisType // Separate connection for pub/sub
-  private subRedis: RedisType
+  public redis: RedisType
+  public pubRedis: RedisType // Separate connection for pub/sub
+  public subRedis: RedisType
 
   private constructor() {
     const redisUrl = process.env['REDIS_URL'] || 'redis://localhost:6379'
@@ -36,7 +36,7 @@ export class RedisService {
       enableReadyCheck: true,
       maxRetriesPerRequest: 3,
       lazyConnect: true,
-    })
+    } as any)
 
     // Pub/Sub connections (separate instances to avoid blocking)
     this.pubRedis = new Redis(redisUrl, {
@@ -44,14 +44,14 @@ export class RedisService {
       enableReadyCheck: true,
       maxRetriesPerRequest: 3,
       lazyConnect: true,
-    })
+    } as any)
 
     this.subRedis = new Redis(redisUrl, {
       retryDelayOnFailover: 100,
       enableReadyCheck: true,
       maxRetriesPerRequest: 3,
       lazyConnect: true,
-    })
+    } as any)
 
     this.setupErrorHandlers()
   }
@@ -86,6 +86,21 @@ export class RedisService {
       console.error('Redis health check failed:', error)
       return false
     }
+  }
+
+  // =============================================================================
+  // Alerting
+  // =============================================================================
+
+  async setAlert(alertId: string, alert: any, ttl: number = 24 * 60 * 60): Promise<void> {
+    const key = `alert:${alertId}`;
+    await this.redis.set(key, JSON.stringify(alert), 'EX', ttl);
+  }
+
+  async getAlert(alertId: string): Promise<any | null> {
+    const key = `alert:${alertId}`;
+    const data = await this.redis.get(key);
+    return data ? JSON.parse(data) : null;
   }
 
   // =============================================================================

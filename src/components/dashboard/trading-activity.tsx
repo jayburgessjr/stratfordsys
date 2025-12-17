@@ -45,16 +45,16 @@ function TradingTooltip({ active, payload, label }: TradingTooltipProps) {
             {entry.name}: {
               entry.name.includes('$') || entry.name.includes('P&L')
                 ? new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    minimumFractionDigits: 0
-                  }).format(entry.value)
+                  style: 'currency',
+                  currency: 'USD',
+                  minimumFractionDigits: 0
+                }).format(entry.value)
                 : entry.name.includes('%')
-                ? new Intl.NumberFormat('en-US', {
+                  ? new Intl.NumberFormat('en-US', {
                     style: 'percent',
                     minimumFractionDigits: 1
                   }).format(entry.value / 100)
-                : entry.value.toLocaleString()
+                  : entry.value.toLocaleString()
             }
           </p>
         ))}
@@ -287,8 +287,12 @@ export function TradingActivity() {
               />
               <Scatter
                 dataKey="y"
-                fill={(data: any) => data.isWin ? '#22c55e' : '#ef4444'}
-              />
+                isAnimationActive={false}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.isWin ? '#22c55e' : '#ef4444'} />
+                ))}
+              </Scatter>
             </ScatterChart>
           </ResponsiveContainer>
         );

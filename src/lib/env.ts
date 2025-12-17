@@ -17,42 +17,42 @@ const envSchema = z.object({
   NEXT_PUBLIC_OPENAI_API_KEY: z.string().optional(),
   NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY: z.string().optional(),
   ALPHA_VANTAGE_BASE_URL: z.string().url().default('https://www.alphavantage.co/query'),
-  YAHOO_FINANCE_ENABLED: z.string().transform(val => val === 'true').default('true'),
+  YAHOO_FINANCE_ENABLED: z.string().default('true').transform(val => val === 'true'),
 
   // Application Settings
-  STRATFORD_RANDOM_SEED: z.string().transform(val => parseInt(val, 10)).default('42'),
-  STRATFORD_SIMULATION_SEED: z.string().transform(val => parseInt(val, 10)).default('42'),
-  STRATFORD_BACKTEST_SEED: z.string().transform(val => parseInt(val, 10)).default('42'),
+  STRATFORD_RANDOM_SEED: z.string().default('42').transform(val => parseInt(val, 10)),
+  STRATFORD_SIMULATION_SEED: z.string().default('42').transform(val => parseInt(val, 10)),
+  STRATFORD_BACKTEST_SEED: z.string().default('42').transform(val => parseInt(val, 10)),
   STRATFORD_VERSION: z.string().default('0.1.0'),
   STRATFORD_ENVIRONMENT: z.string().default('development'),
 
   // Development Settings
-  NEXT_TELEMETRY_DISABLED: z.string().transform(val => val === '1').default('1'),
+  NEXT_TELEMETRY_DISABLED: z.string().default('1').transform(val => val === '1'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).default('debug'),
-  ENABLE_CONSOLE_LOGS: z.string().transform(val => val === 'true').default('true'),
-  ENABLE_MOCK_DATA: z.string().transform(val => val === 'true').default('true'),
-  MOCK_API_DELAY_MS: z.string().transform(val => parseInt(val, 10)).default('500'),
+  ENABLE_CONSOLE_LOGS: z.string().default('true').transform(val => val === 'true'),
+  ENABLE_MOCK_DATA: z.string().default('true').transform(val => val === 'true'),
+  MOCK_API_DELAY_MS: z.string().default('500').transform(val => parseInt(val, 10)),
 
   // Data Configuration
   CSV_DATA_PATH: z.string().default('./data/csv'),
   CACHE_PATH: z.string().default('./data/cache'),
   EXPORTS_PATH: z.string().default('./data/exports'),
   BACKTEST_RESULTS_PATH: z.string().default('./data/backtests'),
-  MAX_HISTORICAL_YEARS: z.string().transform(val => parseInt(val, 10)).default('10'),
-  DEFAULT_HISTORICAL_YEARS: z.string().transform(val => parseInt(val, 10)).default('5'),
-  MAX_SYMBOLS_PER_REQUEST: z.string().transform(val => parseInt(val, 10)).default('5'),
+  MAX_HISTORICAL_YEARS: z.string().default('10').transform(val => parseInt(val, 10)),
+  DEFAULT_HISTORICAL_YEARS: z.string().default('5').transform(val => parseInt(val, 10)),
+  MAX_SYMBOLS_PER_REQUEST: z.string().default('5').transform(val => parseInt(val, 10)),
 
   // Performance Settings
-  CACHE_DURATION_MINUTES: z.string().transform(val => parseInt(val, 10)).default('60'),
-  ENABLE_REDIS_CACHE: z.string().transform(val => val === 'true').default('false'),
+  CACHE_DURATION_MINUTES: z.string().default('60').transform(val => parseInt(val, 10)),
+  ENABLE_REDIS_CACHE: z.string().default('false').transform(val => val === 'true'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
-  API_TIMEOUT_MS: z.string().transform(val => parseInt(val, 10)).default('10000'),
-  STRATEGY_TIMEOUT_MS: z.string().transform(val => parseInt(val, 10)).default('30000'),
-  BACKTEST_TIMEOUT_MS: z.string().transform(val => parseInt(val, 10)).default('60000'),
+  API_TIMEOUT_MS: z.string().default('10000').transform(val => parseInt(val, 10)),
+  STRATEGY_TIMEOUT_MS: z.string().default('30000').transform(val => parseInt(val, 10)),
+  BACKTEST_TIMEOUT_MS: z.string().default('60000').transform(val => parseInt(val, 10)),
 
   // Security Settings
-  ENABLE_RATE_LIMITING: z.string().transform(val => val === 'true').default('true'),
-  MAX_REQUESTS_PER_MINUTE: z.string().transform(val => parseInt(val, 10)).default('100'),
+  ENABLE_RATE_LIMITING: z.string().default('true').transform(val => val === 'true'),
+  MAX_REQUESTS_PER_MINUTE: z.string().default('100').transform(val => parseInt(val, 10)),
   ALLOWED_ORIGINS: z.string().default('http://localhost:3000'),
 
   // Database Configuration
@@ -60,7 +60,7 @@ const envSchema = z.object({
   TEST_DATABASE_URL: z.string().default('file:./data/test.db'),
 
   // Testing Configuration
-  PLAYWRIGHT_HEADLESS: z.string().transform(val => val === 'true').default('true'),
+  PLAYWRIGHT_HEADLESS: z.string().default('true').transform(val => val === 'true'),
   PLAYWRIGHT_BROWSER: z.enum(['chromium', 'firefox', 'webkit']).default('chromium'),
 });
 
@@ -71,7 +71,7 @@ function parseEnv() {
   } catch (error) {
     console.error('❌ Invalid environment configuration:');
     if (error instanceof z.ZodError) {
-      error.errors.forEach(err => {
+      error.issues.forEach(err => {
         console.error(`  - ${err.path.join('.')}: ${err.message}`);
       });
     }

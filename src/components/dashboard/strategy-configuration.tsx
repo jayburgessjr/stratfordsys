@@ -298,11 +298,11 @@ export function StrategyConfiguration() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div className="text-center">
                   <div className="font-medium text-muted-foreground">Total Return</div>
-                  <div className={`text-lg font-bold ${backtestResult.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`text-lg font-bold ${(backtestResult.execution.finalValue - backtestResult.execution.initialCapital) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {new Intl.NumberFormat('en-US', {
                       style: 'percent',
                       minimumFractionDigits: 2
-                    }).format(backtestResult.totalPnL / backtestResult.initialCapital)}
+                    }).format((backtestResult.execution.finalValue - backtestResult.execution.initialCapital) / backtestResult.execution.initialCapital)}
                   </div>
                 </div>
                 <div className="text-center">

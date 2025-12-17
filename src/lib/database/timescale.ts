@@ -214,6 +214,32 @@ export class TimescaleService {
     `
   }
 
+  // Get latest price for a single symbol
+  static async getLatestPrice(symbol: string, date: Date) {
+    const result = await prisma.marketDataPoint.findFirst({
+      where: {
+        symbol,
+        timestamp: {
+          lte: date
+        }
+      },
+      orderBy: {
+        timestamp: 'desc'
+      },
+      select: {
+        close: true,
+        timestamp: true
+      }
+    });
+
+    if (!result) return null;
+    return {
+      price: result.close,
+      close: result.close, // Alias for compatibility
+      timestamp: result.timestamp
+    };
+  }
+
   // Technical indicator storage and retrieval
   static async storeTechnicalIndicator(
     symbol: string,

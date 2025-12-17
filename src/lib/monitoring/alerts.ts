@@ -376,15 +376,15 @@ class AlertingService {
 
     switch (condition.operator) {
       case 'gt':
-        return latestValue > condition.value
+        return Number(latestValue) > Number(condition.value)
       case 'gte':
-        return latestValue >= condition.value
+        return Number(latestValue) >= Number(condition.value)
       case 'lt':
-        return latestValue < condition.value
+        return Number(latestValue) < Number(condition.value)
       case 'lte':
-        return latestValue <= condition.value
+        return Number(latestValue) <= Number(condition.value)
       case 'eq':
-        return latestValue === condition.value
+        return Number(latestValue) === Number(condition.value)
       default:
         return false
     }
@@ -573,10 +573,10 @@ class AlertingService {
 
   private formatAlertMessage(alert: Alert): string {
     return `🚨 ALERT: ${alert.title}\n` +
-           `Severity: ${alert.severity.toUpperCase()}\n` +
-           `Description: ${alert.description}\n` +
-           `Time: ${alert.timestamp.toISOString()}\n` +
-           `Alert ID: ${alert.id}`
+      `Severity: ${alert.severity.toUpperCase()}\n` +
+      `Description: ${alert.description}\n` +
+      `Time: ${alert.timestamp.toISOString()}\n` +
+      `Alert ID: ${alert.id}`
   }
 
   private scheduleEscalation(alert: Alert, escalationRules: EscalationRule[]): void {

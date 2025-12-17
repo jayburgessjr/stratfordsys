@@ -368,7 +368,7 @@ class APMService {
   private collectSystemMetrics(): void {
     if (typeof window !== 'undefined') {
       // Browser metrics
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
+      const navigation = (performance as any).getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
 
       if (navigation) {
         this.addMetric({
@@ -436,7 +436,15 @@ class APMService {
 
       window.fetch = async (...args) => {
         const startTime = performance.now()
-        const url = typeof args[0] === 'string' ? args[0] : args[0].url
+        let urlString = '';
+        if (typeof args[0] === 'string') {
+          urlString = args[0];
+        } else if (args[0] instanceof URL) {
+          urlString = args[0].href;
+        } else {
+          urlString = args[0].url;
+        }
+        const url = urlString;
 
         try {
           const response = await originalFetch(...args)

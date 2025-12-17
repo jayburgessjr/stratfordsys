@@ -26,15 +26,6 @@ export function PortfolioQuickStats() {
       />
 
       <GradientStatCard
-        title="AI Confidence"
-        value="87%"
-        subtitle="Model prediction accuracy"
-        icon={Target}
-        gradient="purple"
-        trend={{ value: "+3.2%", isPositive: true }}
-      />
-
-      <GradientStatCard
         title="Today's Change"
         value="+$2,341"
         subtitle="Daily profit & loss"
