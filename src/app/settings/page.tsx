@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,6 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
+
+import { Separator } from '@/components/ui/separator';
 import {
   Settings,
   Activity,
@@ -18,13 +21,13 @@ import {
   Zap,
   BarChart3,
   RefreshCw,
-  Play,
-  Pause,
   AlertCircle,
   CheckCircle,
   Clock,
   TrendingUp,
-  Users
+  Users,
+  Lock,
+  Globe
 } from 'lucide-react';
 import { AgentDashboard } from '@/components/agents/agent-dashboard';
 
@@ -123,15 +126,15 @@ export default function SettingsPage() {
     switch (status) {
       case 'healthy':
       case 'active':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-emerald-500" />;
       case 'warning':
       case 'idle':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-amber-500" />;
       case 'error':
       case 'stopped':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <AlertCircle className="h-4 w-4 text-rose-500" />;
       default:
-        return <Activity className="h-4 w-4 text-gray-500" />;
+        return <Activity className="h-4 w-4 text-zinc-500" />;
     }
   };
 
@@ -139,777 +142,272 @@ export default function SettingsPage() {
     switch (status) {
       case 'healthy':
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
       case 'warning':
       case 'idle':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
       case 'error':
       case 'stopped':
-        return 'bg-red-100 text-red-800';
+        return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
     }
-  };
-
-  const handleAgentAction = (agentId: string, action: 'start' | 'stop' | 'restart') => {
-    setAgents(prev => prev.map(agent => {
-      if (agent.id === agentId) {
-        let newStatus = agent.status;
-        if (action === 'start') newStatus = 'active';
-        if (action === 'stop') newStatus = 'stopped';
-        if (action === 'restart') newStatus = 'active';
-
-        return {
-          ...agent,
-          status: newStatus as AgentStatus['status'],
-          lastAction: `Agent ${action}ed at ${new Date().toLocaleTimeString()}`
-        };
-      }
-      return agent;
-    }));
   };
 
   const formatUptime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
     return `${hours}h ${minutes}m ${secs}s`;
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
-          <p className="text-muted-foreground">
-            Monitor and configure your Stratford AI trading system
-          </p>
+    <DashboardLayout>
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 h-full flex flex-col gap-4">
+
+        {/* Header */}
+        <div className="flex flex-none justify-between items-center px-1">
+          <div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+              System Control Center
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Manage global configurations and agent parameters
+            </p>
+          </div>
+          <Badge variant="outline" className={`px-3 py-1 bg-black/40 backdrop-blur-md border-white/10 gap-2`}>
+            {getStatusIcon(systemStatus.status)}
+            <span className="capitalize text-zinc-300">{systemStatus.status}</span>
+          </Badge>
         </div>
-        <Badge variant="outline" className="px-3 py-1">
-          {getStatusIcon(systemStatus.status)}
-          <span className="ml-2 capitalize">{systemStatus.status}</span>
-        </Badge>
-      </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="overview">
-            <Activity className="h-4 w-4 mr-2" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="agents">
-            <Bot className="h-4 w-4 mr-2" />
-            Agents
-          </TabsTrigger>
-          <TabsTrigger value="apis">
-            <Database className="h-4 w-4 mr-2" />
-            APIs
-          </TabsTrigger>
-          <TabsTrigger value="news">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            News
-          </TabsTrigger>
-          <TabsTrigger value="trading">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Trading
-          </TabsTrigger>
-          <TabsTrigger value="system">
-            <Settings className="h-4 w-4 mr-2" />
-            System
-          </TabsTrigger>
-          <TabsTrigger value="security">
-            <Shield className="h-4 w-4 mr-2" />
-            Security
-          </TabsTrigger>
-        </TabsList>
+        {/* Main Content Area */}
+        <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="flex-none w-full justify-start bg-black/40 border border-white/5 p-1 mb-4 backdrop-blur-xl">
+            <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              <Activity className="h-4 w-4" /> Overview
+            </TabsTrigger>
+            <TabsTrigger value="agents" className="gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400">
+              <Bot className="h-4 w-4" /> Agents
+            </TabsTrigger>
+            <TabsTrigger value="trading" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+              <TrendingUp className="h-4 w-4" /> Trading
+            </TabsTrigger>
+            <TabsTrigger value="apis" className="gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400">
+              <Database className="h-4 w-4" /> Connections
+            </TabsTrigger>
+            <TabsTrigger value="security" className="gap-2 data-[state=active]:bg-rose-500/20 data-[state=active]:text-rose-400">
+              <Shield className="h-4 w-4" /> Security
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">System Uptime</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatUptime(systemStatus.uptime)}</div>
-                <p className="text-xs text-muted-foreground">
-                  Since last restart
-                </p>
-              </CardContent>
-            </Card>
+          <div className="flex-1 min-h-0 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{systemStatus.memoryUsage}MB</div>
-                <p className="text-xs text-muted-foreground">
-                  Heap memory used
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {agents.filter(a => a.status === 'active').length}/{agents.length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Agents running
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Performance</CardTitle>
-                <Zap className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {Math.round(agents.reduce((acc, a) => acc + a.performance, 0) / agents.length)}%
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Average efficiency
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>System Health Monitor</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Trading Engine</p>
-                    <p className="text-sm text-muted-foreground">Processing market data and signals</p>
-                  </div>
-                  <Badge className={getStatusColor('active')}>
-                    {getStatusIcon('active')} Active
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Risk Management</p>
-                    <p className="text-sm text-muted-foreground">Monitoring position sizes and exposure</p>
-                  </div>
-                  <Badge className={getStatusColor('active')}>
-                    {getStatusIcon('active')} Active
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Data Pipeline</p>
-                    <p className="text-sm text-muted-foreground">Ingesting market data feeds</p>
-                  </div>
-                  <Badge className={getStatusColor('active')}>
-                    {getStatusIcon('active')} Active
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="agents" className="space-y-4">
-          <AgentDashboard />
-        </TabsContent>
-
-        <TabsContent value="trading" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Trading Controls</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="auto-trading">Auto Trading</Label>
-                  <Switch
-                    id="auto-trading"
-                    checked={settings.autoTrading}
-                    onCheckedChange={(checked) =>
-                      setSettings(prev => ({ ...prev, autoTrading: checked }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="risk-management">Risk Management</Label>
-                  <Switch
-                    id="risk-management"
-                    checked={settings.riskManagement}
-                    onCheckedChange={(checked) =>
-                      setSettings(prev => ({ ...prev, riskManagement: checked }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Max Position Size: {(settings.maxPositionSize * 100).toFixed(0)}%</Label>
-                  <Slider
-                    value={[settings.maxPositionSize]}
-                    onValueChange={([value]) =>
-                      setSettings(prev => ({ ...prev, maxPositionSize: value }))
-                    }
-                    max={1}
-                    min={0.01}
-                    step={0.01}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Stop Loss: {(settings.stopLossThreshold * 100).toFixed(1)}%</Label>
-                  <Slider
-                    value={[settings.stopLossThreshold]}
-                    onValueChange={([value]) =>
-                      setSettings(prev => ({ ...prev, stopLossThreshold: value }))
-                    }
-                    max={0.2}
-                    min={0.01}
-                    step={0.001}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Analysis Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="real-time">Real-time Analysis</Label>
-                  <Switch
-                    id="real-time"
-                    checked={settings.realTimeAnalysis}
-                    onCheckedChange={(checked) =>
-                      setSettings(prev => ({ ...prev, realTimeAnalysis: checked }))
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="alerts">Alerts Enabled</Label>
-                  <Switch
-                    id="alerts"
-                    checked={settings.alertsEnabled}
-                    onCheckedChange={(checked) =>
-                      setSettings(prev => ({ ...prev, alertsEnabled: checked }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="refresh-rate">Refresh Rate (ms)</Label>
-                  <Input
-                    id="refresh-rate"
-                    type="number"
-                    value={settings.refreshRate}
-                    onChange={(e) =>
-                      setSettings(prev => ({ ...prev, refreshRate: Number(e.target.value) }))
-                    }
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="system" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Configuration</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="log-level">Log Level</Label>
-                  <select
-                    id="log-level"
-                    className="w-full p-2 border rounded"
-                    value={settings.logLevel}
-                    onChange={(e) =>
-                      setSettings(prev => ({ ...prev, logLevel: e.target.value }))
-                    }
-                  >
-                    <option value="debug">Debug</option>
-                    <option value="info">Info</option>
-                    <option value="warn">Warning</option>
-                    <option value="error">Error</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label>System Status</Label>
-                  <div className="p-2 border rounded">
-                    <Badge className={getStatusColor(systemStatus.status)}>
-                      {getStatusIcon(systemStatus.status)} {systemStatus.status}
-                    </Badge>
-                  </div>
-                </div>
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="mt-0 space-y-6">
+              {/* Key Metrics Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-zinc-400">System Uptime</CardTitle>
+                    <Clock className="h-4 w-4 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">{formatUptime(systemStatus.uptime)}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Since last reboot</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-zinc-400">Memory Usage</CardTitle>
+                    <Zap className="h-4 w-4 text-yellow-400" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">{Math.round(systemStatus.memoryUsage)} MB</div>
+                    <div className="w-full bg-white/10 h-1 mt-2 rounded-full overflow-hidden">
+                      <div className="bg-yellow-400 h-full transition-all duration-500" style={{ width: `${(systemStatus.memoryUsage / 512) * 100}%` }} />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-zinc-400">Active Agents</CardTitle>
+                    <Users className="h-4 w-4 text-purple-400" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">{agents.filter(a => a.status === 'active').length} <span className="text-sm font-normal text-muted-foreground">/ {agents.length}</span></div>
+                    <p className="text-xs text-muted-foreground mt-1">Operational capacity</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-zinc-400">System Health</CardTitle>
+                    <Activity className="h-4 w-4 text-emerald-400" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-emerald-400">100%</div>
+                    <p className="text-xs text-muted-foreground mt-1">All systems nominal</p>
+                  </CardContent>
+                </Card>
               </div>
 
-              <div className="pt-4">
-                <h3 className="font-medium mb-2">System Actions</h3>
-                <div className="flex space-x-2">
-                  <Button variant="outline">
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Restart System
+              {/* System Actions */}
+              <Card className="bg-black/40 border-white/5">
+                <CardHeader>
+                  <CardTitle className="text-sm">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="flex gap-4">
+                  <Button variant="outline" className="border-white/10 hover:bg-white/5 hover:text-white">
+                    <RefreshCw className="h-4 w-4 mr-2" /> Restart Services
                   </Button>
-                  <Button variant="outline">
-                    <Database className="h-4 w-4 mr-2" />
-                    Clear Cache
+                  <Button variant="outline" className="border-white/10 hover:bg-white/5 hover:text-white">
+                    <Database className="h-4 w-4 mr-2" /> Clear Cache
                   </Button>
-                  <Button variant="outline">
-                    <Activity className="h-4 w-4 mr-2" />
-                    Export Logs
+                  <Button variant="outline" className="border-white/10 hover:bg-white/5 hover:text-white">
+                    <Shield className="h-4 w-4 mr-2" /> Rotate Keys
                   </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        <TabsContent value="security" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="p-4 border rounded-lg">
-                  <h3 className="font-medium text-green-600 mb-2">✓ API Security</h3>
-                  <p className="text-sm text-muted-foreground">
-                    All API endpoints are secured with proper authentication
-                  </p>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <h3 className="font-medium text-green-600 mb-2">✓ Data Encryption</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Trading data is encrypted at rest and in transit
-                  </p>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <h3 className="font-medium text-green-600 mb-2">✓ Rate Limiting</h3>
-                  <p className="text-sm text-muted-foreground">
-                    API rate limiting prevents abuse and ensures stability
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            {/* Agents Tab */}
+            <TabsContent value="agents" className="mt-0">
+              <AgentDashboard />
+            </TabsContent>
 
-        <TabsContent value="apis" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>API Management</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="font-medium text-lg">Market Data APIs</h3>
-
-                <div className="grid gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Alpha Vantage</h4>
-                        <p className="text-sm text-muted-foreground">Stock market data and financial indicators</p>
-                      </div>
-                      <Badge variant="default">Active</Badge>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="av-key">API Key</Label>
-                        <Input id="av-key" type="password" placeholder="Enter Alpha Vantage API key" defaultValue="demo" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label htmlFor="av-calls">Daily Calls</Label>
-                          <Input id="av-calls" value="247/500" readOnly />
-                        </div>
-                        <div>
-                          <Label htmlFor="av-rate">Rate Limit</Label>
-                          <Input id="av-rate" value="5 calls/min" readOnly />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Binance API</h4>
-                        <p className="text-sm text-muted-foreground">Cryptocurrency trading and market data</p>
-                      </div>
-                      <Badge variant="default">Active</Badge>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label htmlFor="binance-key">API Key</Label>
-                          <Input id="binance-key" type="password" placeholder="Enter Binance API key" />
-                        </div>
-                        <div>
-                          <Label htmlFor="binance-secret">Secret Key</Label>
-                          <Input id="binance-secret" type="password" placeholder="Enter secret key" />
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch id="binance-testnet" />
-                        <Label htmlFor="binance-testnet">Use Testnet</Label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Polygon.io</h4>
-                        <p className="text-sm text-muted-foreground">Real-time and historical market data</p>
-                      </div>
-                      <Badge variant="secondary">Inactive</Badge>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="polygon-key">API Key</Label>
-                        <Input id="polygon-key" type="password" placeholder="Enter Polygon.io API key" />
-                      </div>
-                      <Button variant="outline">Activate</Button>
-                    </div>
-                  </div>
-                </div>
-
-                <h3 className="font-medium text-lg pt-4">Sports Betting APIs</h3>
-
-                <div className="grid gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">The Odds API</h4>
-                        <p className="text-sm text-muted-foreground">Live odds from 40+ bookmakers</p>
-                      </div>
-                      <Badge variant="default">Active</Badge>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="odds-key">API Key</Label>
-                        <Input id="odds-key" type="password" placeholder="Enter Odds API key" defaultValue="demo" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label htmlFor="odds-calls">Requests Used</Label>
-                          <Input id="odds-calls" value="1,247/10,000" readOnly />
-                        </div>
-                        <div>
-                          <Label htmlFor="odds-sports">Sports Enabled</Label>
-                          <Input id="odds-sports" value="NFL, NBA, MLB, Soccer" readOnly />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">SportRadar API</h4>
-                        <p className="text-sm text-muted-foreground">Professional sports statistics and data</p>
-                      </div>
-                      <Badge variant="secondary">Inactive</Badge>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="sportradar-key">API Key</Label>
-                        <Input id="sportradar-key" type="password" placeholder="Enter SportRadar API key" />
-                      </div>
-                      <Button variant="outline">Setup</Button>
-                    </div>
-                  </div>
-                </div>
-
-                <h3 className="font-medium text-lg pt-4">Trading & Brokerage APIs</h3>
-
-                <div className="grid gap-4">
-                  <div className="p-4 border rounded-lg bg-blue-50/50 dark:bg-blue-950/20">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Robinhood Live Trading</h4>
-                        <p className="text-sm text-muted-foreground">Sync your real portfolio and trades</p>
-                      </div>
-                      <Badge variant="secondary">Not Configured</Badge>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label htmlFor="rh-username">Username/Email</Label>
-                          <Input id="rh-username" type="email" placeholder="your@email.com" />
-                        </div>
-                        <div>
-                          <Label htmlFor="rh-password">Password</Label>
-                          <Input id="rh-password" type="password" placeholder="••••••••" />
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-muted-foreground">
-                          🔒 Credentials stored securely in environment variables
-                        </p>
-                        <Button variant="outline" size="sm">Test Connection</Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <h3 className="font-medium text-lg pt-4">Lottery Data APIs</h3>
-
-                <div className="grid gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Lottery Numbers API</h4>
-                        <p className="text-sm text-muted-foreground">Historical lottery results for analysis</p>
-                      </div>
-                      <Badge variant="default">Active</Badge>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="lottery-source">Data Source</Label>
-                        <Input id="lottery-source" value="Multiple State Lotteries" readOnly />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label htmlFor="lottery-history">Historical Data</Label>
-                          <Input id="lottery-history" value="10+ years" readOnly />
-                        </div>
-                        <div>
-                          <Label htmlFor="lottery-games">Games Tracked</Label>
-                          <Input id="lottery-games" value="Powerball, Mega Millions, Pick 6" readOnly />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="news" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>News & Data Feeds</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="font-medium text-lg">Financial News Sources</h3>
-
-                <div className="grid gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Bloomberg Terminal</h4>
-                        <p className="text-sm text-muted-foreground">Real-time financial news and market data</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch id="bloomberg" defaultChecked />
-                        <Badge variant="default">Live</Badge>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Stories Today:</span>
-                        <div className="font-medium">1,247</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">High Impact:</span>
-                        <div className="font-medium">23</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Sentiment:</span>
-                        <div className="font-medium text-green-600">Bullish</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Reuters Market News</h4>
-                        <p className="text-sm text-muted-foreground">Global financial market coverage</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch id="reuters" defaultChecked />
-                        <Badge variant="default">Live</Badge>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Updates/Hour:</span>
-                        <div className="font-medium">45</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Regions:</span>
-                        <div className="font-medium">Global</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Languages:</span>
-                        <div className="font-medium">EN, ES, FR</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Alpha Intelligence</h4>
-                        <p className="text-sm text-muted-foreground">AI-powered market analysis and predictions</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch id="alpha-intel" defaultChecked />
-                        <Badge variant="default">AI</Badge>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Predictions:</span>
-                        <div className="font-medium">Real-time</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Accuracy:</span>
-                        <div className="font-medium text-green-600">87.3%</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Models:</span>
-                        <div className="font-medium">GPT-4, Claude</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <h3 className="font-medium text-lg pt-4">Social Sentiment Analysis</h3>
-
-                <div className="grid gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Twitter/X Sentiment</h4>
-                        <p className="text-sm text-muted-foreground">Real-time social media sentiment tracking</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch id="twitter" defaultChecked />
-                        <Badge variant="default">Live</Badge>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-4 gap-3 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Mentions/Day:</span>
-                        <div className="font-medium">12.5K</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Bullish:</span>
-                        <div className="font-medium text-green-600">67%</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Bearish:</span>
-                        <div className="font-medium text-red-600">23%</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Neutral:</span>
-                        <div className="font-medium">10%</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Reddit WallStreetBets</h4>
-                        <p className="text-sm text-muted-foreground">Retail investor sentiment and meme stock tracking</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch id="reddit" defaultChecked />
-                        <Badge variant="secondary">Monitoring</Badge>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Hot Stocks:</span>
-                        <div className="font-medium">NVDA, TSLA, GME</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Mentions:</span>
-                        <div className="font-medium">2.3K/hour</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Sentiment:</span>
-                        <div className="font-medium text-yellow-600">Mixed</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <h3 className="font-medium text-lg pt-4">Alternative Data Sources</h3>
-
-                <div className="grid gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Satellite Data</h4>
-                        <p className="text-sm text-muted-foreground">Economic activity indicators from satellite imagery</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch id="satellite" />
-                        <Badge variant="outline">Premium</Badge>
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Track economic activity through parking lot occupancy, shipping volumes, and construction activity.
-                    </div>
-                  </div>
-
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium">Weather Impact Analysis</h4>
-                        <p className="text-sm text-muted-foreground">Weather effects on agricultural and energy markets</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch id="weather" defaultChecked />
-                        <Badge variant="default">Active</Badge>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Forecast Accuracy:</span>
-                        <div className="font-medium">94.2%</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Impact Analysis:</span>
-                        <div className="font-medium">Real-time</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t">
+            {/* Trading Tab */}
+            <TabsContent value="trading" className="mt-0 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="bg-black/40 border-white/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-yellow-400" /> Execution Parameters
+                  </CardTitle>
+                  <CardDescription>Configure automated trading behavior</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">Feed Processing</h4>
-                      <p className="text-sm text-muted-foreground">AI-powered analysis and signal generation</p>
+                    <div className="space-y-0.5">
+                      <Label>Auto-Execution</Label>
+                      <p className="text-xs text-muted-foreground">Allow agents to place orders without confirmation</p>
                     </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline">Test All Feeds</Button>
-                      <Button>Save Configuration</Button>
+                    <Switch checked={settings.autoTrading} onCheckedChange={v => setSettings(s => ({ ...s, autoTrading: v }))} />
+                  </div>
+                  <Separator className="bg-white/5" />
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <Label>Max Position Size</Label>
+                      <span className="text-sm text-primary font-mono">{(settings.maxPositionSize * 100).toFixed(0)}%</span>
+                    </div>
+                    <Slider
+                      value={[settings.maxPositionSize]}
+                      min={0.01} max={1} step={0.01}
+                      onValueChange={([v]) => setSettings(s => ({ ...s, maxPositionSize: v }))}
+                      className="py-2"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-black/40 border-white/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-emerald-400" /> Risk Management
+                  </CardTitle>
+                  <CardDescription>Global safety limits and stop-losses</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Global Risk Guard</Label>
+                      <p className="text-xs text-muted-foreground">Override all agents if drawdown exceeds limit</p>
+                    </div>
+                    <Switch checked={settings.riskManagement} onCheckedChange={v => setSettings(s => ({ ...s, riskManagement: v }))} />
+                  </div>
+                  <Separator className="bg-white/5" />
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <Label>Hard Stop Loss</Label>
+                      <span className="text-sm text-rose-400 font-mono">{(settings.stopLossThreshold * 100).toFixed(1)}%</span>
+                    </div>
+                    <Slider
+                      value={[settings.stopLossThreshold]}
+                      min={0.01} max={0.2} step={0.005}
+                      onValueChange={([v]) => setSettings(s => ({ ...s, stopLossThreshold: v }))}
+                      className="py-2"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* APIs Tab */}
+            <TabsContent value="apis" className="mt-0 space-y-4">
+              <Card className="bg-black/40 border-white/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Database className="h-4 w-4 text-blue-400" /> Connected Services
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  {[
+                    { name: 'Alpaca Markets', type: 'Brokerage', status: 'Active', latency: '24ms' },
+                    { name: 'Polygon.io', type: 'Data Feed', status: 'Active', latency: '12ms' },
+                    { name: 'OpenAI API', type: 'Intelligence', status: 'Active', latency: '150ms' },
+                    { name: 'Bloomberg Terminal', type: 'News', status: 'Inactive', latency: '-' }
+                  ].map((api, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-2 w-2 rounded-full ${api.status === 'Active' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-zinc-600'}`} />
+                        <div>
+                          <p className="font-medium text-sm text-white">{api.name}</p>
+                          <p className="text-xs text-muted-foreground">{api.type}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="secondary" className="bg-black/40 border-white/10">{api.status}</Badge>
+                        <p className="text-xs text-zinc-500 mt-1 font-mono">{api.latency}</p>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Security Tab */}
+            <TabsContent value="security" className="mt-0 space-y-4">
+              <Card className="bg-black/40 border-white/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-rose-400" /> Security Audit
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 border border-emerald-500/20 bg-emerald-500/5 rounded-lg">
+                    <h3 className="font-medium text-emerald-400 mb-1 flex items-center gap-2"><CheckCircle className="h-4 w-4" /> Environment Secured</h3>
+                    <p className="text-xs text-zinc-400">All API keys are encrypted at rest. Rate limiting is active on all endpoints.</p>
+                  </div>
+
+                  <div className="space-y-4 pt-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Two-Factor Authentication</Label>
+                      <Switch checked={true} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label>IP Whitelisting</Label>
+                      <Switch checked={false} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label>Audit Logging</Label>
+                      <Switch checked={true} />
                     </div>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+          </div>
+        </Tabs>
+      </div>
+    </DashboardLayout>
   );
 }
