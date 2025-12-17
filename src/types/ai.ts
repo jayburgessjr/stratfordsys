@@ -48,7 +48,7 @@ export interface PortfolioAdvice {
 
 export interface QuantumAllocation {
   allocation: {
-    assetClass: 'Stock' | 'Crypto' | 'Commodity' | 'Prediction' | 'Lottery' | 'Cash';
+    assetClass: 'Stock' | 'Crypto' | 'Commodity' | 'MutualFund' | 'Prediction' | 'Sports' | 'Lottery' | 'Cash';
     percentage: number;
     reasoning: string;
     recommendedAssets: string[];

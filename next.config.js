@@ -2,7 +2,8 @@
 const nextConfig = {
   // Use standalone for Vercel serverless functions
   // or export for static builds
-  output: process.env.VERCEL ? undefined : (process.env.BUILD_STANDALONE ? 'standalone' : 'export'),
+  // Don't use 'export' in development as it breaks API routes
+  output: process.env.VERCEL ? undefined : (process.env.BUILD_STANDALONE ? 'standalone' : (process.env.NODE_ENV === 'production' ? 'export' : undefined)),
 
   // Trailing slash for static exports only
   ...(process.env.VERCEL ? {} : (process.env.BUILD_STANDALONE ? {} : {

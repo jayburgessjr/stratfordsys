@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server';
 import { QuantumAgent } from '@/lib/agents/quantum-agent';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         const { capital, risk } = await req.json();

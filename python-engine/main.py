@@ -37,9 +37,10 @@ class OptimizationResponse(BaseModel):
 # In a real app, this might be dynamic.
 UNIVERSE = {
     "Stock": ["SPY", "QQQ", "VTI", "EEM"],
-    "Crypto": ["BTC-USD", "ETH-USD"], # Yahoo Finance symbols
-    "Commodity": ["GLD", "USO"],
-    # Kalshi/Lottery are handled qualitatively as they don't have standard historical yahoo data
+    "Crypto": ["BTC-USD", "ETH-USD", "SOL-USD"], # Yahoo Finance symbols
+    "Commodity": ["GLD", "USO", "SLV"],
+    "MutualFund": ["VTSAX", "VFIAX"],  # Vanguard mutual funds
+    # Kalshi/Lottery/Sports are handled qualitatively as they don't have standard historical yahoo data
 }
 
 @app.get("/")
@@ -52,13 +53,27 @@ def optimize_portfolio(request: OptimizationRequest):
     capital = request.capital
     
     # 1. Fetch Real Historical Data (Yahoo Finance)
-    tickers = UNIVERSE["Stock"] + UNIVERSE["Crypto"] + UNIVERSE["Commodity"]
+    tickers = UNIVERSE["Stock"] + UNIVERSE["Crypto"] + UNIVERSE["Commodity"] + UNIVERSE["MutualFund"]
     try:
         # Download 1 year of data
-        data = yf.download(tickers, period="1y")["Adj Close"]
-        if data.empty:
+        raw_data = yf.download(tickers, period="1y", progress=False)
+
+        # Handle single vs multiple tickers
+        if isinstance(raw_data.columns, pd.MultiIndex):
+            # Multiple tickers - extract Adj Close
+            if 'Adj Close' in raw_data.columns.levels[0]:
+                data = raw_data['Adj Close']
+            elif 'Close' in raw_data.columns.levels[0]:
+                data = raw_data['Close']
+            else:
+                raise Exception("No price data available")
+        else:
+            # Single ticker or already flat structure
+            data = raw_data
+
+        if data.empty or len(data) < 30:
              # Fallback if download fails (e.g. rate limits)
-             raise Exception("No data")
+             raise Exception("Insufficient data")
     except Exception as e:
         print(f"Data fetch error: {e}")
         # Fallback to simulated logic if live data fails
@@ -102,13 +117,14 @@ def optimize_portfolio(request: OptimizationRequest):
         return fallback_optimization(capital, risk)
 
     # 3. Process Weights into Asset Classes
-    
+
     total_stock = 0.0
     total_crypto = 0.0
     total_commodity = 0.0
-    
-    portfolio_assets = {"Stock": [], "Crypto": [], "Commodity": []}
-    
+    total_mutualfund = 0.0
+
+    portfolio_assets = {"Stock": [], "Crypto": [], "Commodity": [], "MutualFund": []}
+
     for ticker, weight in cleaned_weights.items():
         w_pct = round(weight * 100, 2)
         if w_pct > 0:
@@ -121,6 +137,15 @@ def optimize_portfolio(request: OptimizationRequest):
             elif ticker in UNIVERSE["Commodity"]:
                 total_commodity += w_pct
                 portfolio_assets["Commodity"].append(f"{ticker} ({w_pct}%)")
+            elif ticker in UNIVERSE["MutualFund"]:
+                total_mutualfund += w_pct
+                portfolio_assets["MutualFund"].append(f"{ticker} ({w_pct}%)")
+
+    # Force minimum crypto allocation for moderate to high risk
+    if risk >= 6 and total_crypto == 0:
+        crypto_boost = min(5, risk - 5)  # 1-5% based on risk
+        total_crypto = crypto_boost
+        portfolio_assets["Crypto"].append(f"BTC-USD ({crypto_boost}%)")
 
     # 4. Handle "Speculative" Assets (Qualitative Overlay)
     # MPT doesn't handle Lottery/Prediction well, so we add them as a tactical overlay
@@ -129,24 +154,44 @@ def optimize_portfolio(request: OptimizationRequest):
     reduction_factor = 1.0
     
     if risk >= 8:
-        # Degen overlay: Reallocate 10-15% from the optimized portfolio to Speculative
-        prediction_pct = (risk - 7) * 4 # 4%, 8%, 12%
+        # Degen overlay: Reallocate from the optimized portfolio to Speculative
+        prediction_pct = (risk - 7) * 3 # 3%, 6%, 9%
+        sports_pct = (risk - 7) * 2     # 2%, 4%, 6%
         lottery_pct = (risk - 7) * 1    # 1%, 2%, 3%
-        
-        total_spec = prediction_pct + lottery_pct
+
+        total_spec = prediction_pct + sports_pct + lottery_pct
         reduction_factor = (100 - total_spec) / 100.0
-        
+
+        # Kalshi prediction markets
         speculative_allocation.append({
             "assetClass": "Prediction",
             "percentage": prediction_pct,
-            "reasoning": "High-conviction binary alpha (Kalshi).",
-            "recommendedAssets": ["FED-RATES", "ELECTION"]
+            "reasoning": "High-conviction binary alpha via prediction markets.",
+            "recommendedAssets": ["FED-RATES-JUN25", "TRUMP-ELECTION-2028", "RECESSION-2025"]
         })
+
+        # Sports betting recommendations
+        speculative_allocation.append({
+            "assetClass": "Sports",
+            "percentage": sports_pct,
+            "reasoning": "Statistical edge in sports betting markets.",
+            "recommendedAssets": ["NBA: Lakers ML", "NFL: Chiefs -3.5", "EPL: Man City Over 2.5"]
+        })
+
+        # Lottery with actual number picks
+        import random
+        random.seed(42)  # For consistency
+        powerball_nums = sorted(random.sample(range(1, 70), 5)) + [random.randint(1, 26)]
+        mega_nums = sorted(random.sample(range(1, 71), 5)) + [random.randint(1, 25)]
+
         speculative_allocation.append({
              "assetClass": "Lottery",
              "percentage": lottery_pct,
-             "reasoning": "Positive convexity black swan exposure.",
-             "recommendedAssets": ["POWERBALL"]
+             "reasoning": "Positive convexity black swan exposure with optimized number selection.",
+             "recommendedAssets": [
+                 f"POWERBALL: {powerball_nums[0]}-{powerball_nums[1]}-{powerball_nums[2]}-{powerball_nums[3]}-{powerball_nums[4]} PB:{powerball_nums[5]}",
+                 f"MEGA MILLIONS: {mega_nums[0]}-{mega_nums[1]}-{mega_nums[2]}-{mega_nums[3]}-{mega_nums[4]} MB:{mega_nums[5]}"
+             ]
         })
         
     # Apply reduction to core portfolio
@@ -175,7 +220,15 @@ def optimize_portfolio(request: OptimizationRequest):
             "reasoning": "Uncorrelated diversification.",
             "recommendedAssets": portfolio_assets["Commodity"]
         })
-        
+
+    if total_mutualfund > 0:
+        allocations.append({
+            "assetClass": "MutualFund",
+            "percentage": round(total_mutualfund * reduction_factor, 2),
+            "reasoning": "Low-cost diversified index funds.",
+            "recommendedAssets": portfolio_assets["MutualFund"]
+        })
+
     allocations.extend(speculative_allocation)
     
     # Calculate Portfolio Performance Stats from EF

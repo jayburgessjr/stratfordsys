@@ -45,16 +45,28 @@ export default function QuantumPage() {
             // Simulate API latency for "processing" feel
             await new Promise(resolve => setTimeout(resolve, 3000));
 
-            const response = await fetch('/api/quantum/generate', {
+            const response = await fetch('/api/quantum/generate/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ capital, risk }),
             });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
             const data = await response.json();
-            setAllocation(data);
+
+            // Validate the response has the expected structure
+            if (data && data.allocation && Array.isArray(data.allocation)) {
+                setAllocation(data);
+            } else {
+                throw new Error('Invalid response format');
+            }
         } catch (error) {
             console.error('Failed to generate allocation:', error);
             setLogs(prev => [...prev, "CRITICAL ERROR: Simulation Divergence"]);
+            setAllocation(null); // Clear any previous allocation
         } finally {
             setLoading(false);
         }
