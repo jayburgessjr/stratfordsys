@@ -1,6 +1,6 @@
 [build]
-  # Removed publish = "out" - Let @netlify/plugin-nextjs handle publishing for SSR/ISR support
   command = "pnpm install --frozen-lockfile=false && pnpm build:netlify"
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
