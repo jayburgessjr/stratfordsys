@@ -1,14 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Use standalone for Vercel serverless functions
-  // or export for static builds
-  // Don't use 'export' in development as it breaks API routes
+  // For Netlify: undefined output lets @netlify/plugin-nextjs handle SSR/ISR
+  // Only use 'standalone' when explicitly building standalone server
   output: process.env.VERCEL ? undefined : (process.env.BUILD_STANDALONE ? 'standalone' : undefined),
 
-  // Trailing slash for static exports only
-  ...(process.env.VERCEL ? {} : (process.env.BUILD_STANDALONE ? {} : {
-    trailingSlash: true,
-  })),
+  // Trailing slash configuration
+  trailingSlash: true,
 
   // Enable SWC minification for better performance
   swcMinify: true,
