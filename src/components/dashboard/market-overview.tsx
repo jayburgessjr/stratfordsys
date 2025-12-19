@@ -197,7 +197,7 @@ export function MarketOverview() {
                     <div className="text-sm text-muted-foreground">{formatCurrency(quote.price)}</div>
                   </div>
                   <div className="text-right">
-                    <div className={`flex items-center gap-1 ${quote.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`flex items-center gap-1 ${quote.change >= 0 ? 'text-primary' : 'text-red-500'}`}>
                       {quote.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                       <span className="font-medium">{formatPercentage(quote.changePercent)}</span>
                     </div>
@@ -228,7 +228,7 @@ export function MarketOverview() {
                     <div className="text-sm text-muted-foreground">{formatCurrency(quote.price)}</div>
                   </div>
                   <div className="text-right">
-                    <div className={`flex items-center gap-1 ${quote.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`flex items-center gap-1 ${quote.change >= 0 ? 'text-primary' : 'text-red-500'}`}>
                       {quote.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                       <span className="font-medium">{formatPercentage(quote.changePercent)}</span>
                     </div>
@@ -259,7 +259,7 @@ export function MarketOverview() {
                     <div className="text-sm text-muted-foreground">{formatCurrency(quote.price)}</div>
                   </div>
                   <div className="text-right">
-                    <div className={`flex items-center gap-1 ${quote.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`flex items-center gap-1 ${quote.change >= 0 ? 'text-primary' : 'text-red-500'}`}>
                       {quote.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                       <span className="font-medium">{formatPercentage(quote.changePercent)}</span>
                     </div>
@@ -303,9 +303,8 @@ export function MarketOverview() {
                   </div>
                   <div className="text-right">
                     <div className="font-medium">{formatCurrency(index.price)}</div>
-                    <div className={`text-sm flex items-center ${
-                      index.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <div className={`text-sm flex items-center ${index.trend === 'up' ? 'text-primary' : 'text-red-500'
+                      }`}>
                       {index.trend === 'up' ? (
                         <TrendingUp className="h-3 w-3 mr-1" />
                       ) : (
@@ -347,9 +346,8 @@ export function MarketOverview() {
                   </div>
                   <div className="text-right">
                     <div className="font-medium">{formatCurrency(crypto.price)}</div>
-                    <div className={`text-sm flex items-center ${
-                      crypto.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <div className={`text-sm flex items-center ${crypto.trend === 'up' ? 'text-primary' : 'text-red-500'
+                      }`}>
                       {crypto.trend === 'up' ? (
                         <TrendingUp className="h-3 w-3 mr-1" />
                       ) : (
@@ -391,9 +389,8 @@ export function MarketOverview() {
                   </div>
                   <div className="text-right">
                     <div className="font-medium">{formatCurrency(stock.price)}</div>
-                    <div className={`text-sm flex items-center ${
-                      stock.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <div className={`text-sm flex items-center ${stock.trend === 'up' ? 'text-primary' : 'text-red-500'
+                      }`}>
                       {stock.trend === 'up' ? (
                         <TrendingUp className="h-3 w-3 mr-1" />
                       ) : (
@@ -416,7 +413,7 @@ export function MarketOverview() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center">
-                <Activity className="mr-2 h-5 w-5 text-orange-500" />
+                <Activity className="mr-2 h-5 w-5 text-amber-500" />
                 Market News
               </div>
               {newsLoading && <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />}
@@ -469,7 +466,7 @@ export function MarketOverview() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Activity className="mr-2 h-5 w-5 text-green-500" />
+              <Activity className="mr-2 h-5 w-5 text-primary" />
               Gambling News
             </CardTitle>
             <CardDescription>Sports betting & casino insights</CardDescription>
@@ -523,7 +520,7 @@ export function MarketOverview() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Zap className="mr-2 h-5 w-5 text-blue-500" />
+              <Zap className="mr-2 h-5 w-5 text-cyan-500" />
               AI Trading Signals
             </CardTitle>
             <CardDescription>Algorithmic recommendations</CardDescription>
@@ -534,7 +531,7 @@ export function MarketOverview() {
                 <div className="flex items-center space-x-3">
                   <Badge variant={
                     insight.type === 'BUY' ? 'default' :
-                    insight.type === 'SELL' ? 'destructive' : 'outline'
+                      insight.type === 'SELL' ? 'destructive' : 'outline'
                   }>
                     {insight.type}
                   </Badge>
@@ -559,7 +556,7 @@ export function MarketOverview() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Target className="mr-2 h-5 w-5 text-purple-500" />
+              <Target className="mr-2 h-5 w-5 text-secondary" />
               Lottery Predictions
             </CardTitle>
             <CardDescription>AI-generated number combinations</CardDescription>
@@ -581,7 +578,7 @@ export function MarketOverview() {
                     {lotteryPredictions.powerball.powerball}
                   </div>
                 </div>
-                <div className="text-sm text-green-600 font-medium mb-2">Jackpot: {lotteryPredictions.powerball.jackpot}</div>
+                <div className="text-sm text-primary font-medium mb-2">Jackpot: {lotteryPredictions.powerball.jackpot}</div>
                 <div className="text-xs text-muted-foreground mb-2">
                   <span className="font-semibold">Strategy:</span> {lotteryPredictions.powerball.strategy}
                 </div>
@@ -614,11 +611,11 @@ export function MarketOverview() {
                       {num}
                     </div>
                   ))}
-                  <div className="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-sm font-bold">
+                  <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-sm font-bold">
                     {lotteryPredictions.megaMillions.megaBall}
                   </div>
                 </div>
-                <div className="text-sm text-green-600 font-medium mb-2">Jackpot: {lotteryPredictions.megaMillions.jackpot}</div>
+                <div className="text-sm text-primary font-medium mb-2">Jackpot: {lotteryPredictions.megaMillions.jackpot}</div>
                 <div className="text-xs text-muted-foreground mb-2">
                   <span className="font-semibold">Strategy:</span> {lotteryPredictions.megaMillions.strategy}
                 </div>
@@ -645,7 +642,7 @@ export function MarketOverview() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Target className="mr-2 h-5 w-5 text-green-500" />
+              <Target className="mr-2 h-5 w-5 text-primary" />
               Gambling Predictions
             </CardTitle>
             <CardDescription>Sports & casino AI recommendations</CardDescription>
@@ -697,7 +694,7 @@ export function MarketOverview() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <TrendingUp className="mr-2 h-5 w-5 text-blue-500" />
+              <TrendingUp className="mr-2 h-5 w-5 text-cyan-500" />
               Market Predictions
             </CardTitle>
             <CardDescription>Stock & crypto AI forecasts</CardDescription>

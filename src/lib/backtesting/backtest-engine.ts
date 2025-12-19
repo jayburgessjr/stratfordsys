@@ -8,6 +8,8 @@
 import { log } from '@/lib/logger';
 import { deterministicUUID } from '@/utils/deterministic';
 import { MovingAverageCrossoverStrategy } from '@/lib/strategies/moving-average-crossover';
+import { MeanReversionStrategy } from '@/lib/strategies/mean-reversion';
+import { BreakoutStrategy } from '@/lib/strategies/breakout';
 import { PerformanceAnalyzer } from '@/lib/analysis/performance-analyzer';
 import type {
   BacktestConfig,
@@ -141,12 +143,21 @@ export class BacktestEngine {
   }> {
     // Currently supports Moving Average Crossover strategy
     // In the future, this would be extended to support multiple strategy types
-    if (this.config.strategy.type !== 'MOVING_AVERAGE_CROSSOVER') {
-      throw new Error(`Unsupported strategy type: ${this.config.strategy.type}`);
-    }
+    let result;
 
-    const strategy = new MovingAverageCrossoverStrategy(this.config.strategy);
-    const result = strategy.execute(timeSeries);
+    switch (this.config.strategy.type) {
+      case 'MOVING_AVERAGE_CROSSOVER':
+        result = new MovingAverageCrossoverStrategy(this.config.strategy).execute(timeSeries);
+        break;
+      case 'MEAN_REVERSION':
+        result = new MeanReversionStrategy(this.config.strategy).execute(timeSeries);
+        break;
+      case 'BREAKOUT':
+        result = new BreakoutStrategy(this.config.strategy).execute(timeSeries);
+        break;
+      default:
+        throw new Error(`Unsupported strategy type: ${this.config.strategy.type}`);
+    }
 
     // Apply backtesting-specific adjustments (commission, slippage, etc.)
     const adjustedTrades = this.applyBacktestingCosts(result.trades);

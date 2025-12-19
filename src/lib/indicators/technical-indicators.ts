@@ -389,11 +389,11 @@ export function detectSupportResistance(
 
     // Check for pivot high
     const isPivotHigh = leftWindow.every(d => d.high <= current.high) &&
-                       rightWindow.every(d => d.high <= current.high);
+      rightWindow.every(d => d.high <= current.high);
 
     // Check for pivot low
     const isPivotLow = leftWindow.every(d => d.low >= current.low) &&
-                      rightWindow.every(d => d.low >= current.low);
+      rightWindow.every(d => d.low >= current.low);
 
     if (isPivotHigh) {
       pivotPoints.push({
@@ -531,4 +531,104 @@ export interface SupportResistanceLevel {
   strength: number;
   firstTouch: string;
   lastTouch: string;
+}
+
+/**
+ * Donchian Channels
+ * Trend following indicator that uses the highest high and lowest low
+ */
+export function calculateDonchianChannels(
+  data: readonly OHLCVData[],
+  period: number = 20
+): DonchianChannel[] {
+  if (period <= 0) {
+    throw new Error('Period must be greater than 0');
+  }
+
+  if (data.length < period) {
+    return [];
+  }
+
+  const channels: DonchianChannel[] = [];
+
+  // Start from the end of the first period
+  for (let i = period - 1; i < data.length; i++) {
+    // Look back 'period' candles (inclusive of current for current channel value)
+    // Usually Donchian is derived from *previous* N periods for signals, but standard indicator plot is current window.
+    // We will calculate for [i - period + 1, i]
+
+    const window = data.slice(i - period + 1, i + 1);
+
+    const upper = Math.max(...window.map(d => d.high));
+    const lower = Math.min(...window.map(d => d.low));
+    const middle = (upper + lower) / 2;
+
+    channels.push({
+      date: data[i].date,
+      upper,
+      lower,
+      middle
+    });
+  }
+
+  return channels;
+}
+
+export interface DonchianChannel {
+  date: string;
+  upper: number;
+  lower: number;
+  middle: number;
+}
+
+/**
+ * Average True Range (ATR)
+ * Volatility indicator
+ */
+export function calculateATR(data: readonly OHLCVData[], period: number = 14): number[] {
+  if (period <= 0) {
+    throw new Error('Period must be greater than 0');
+  }
+
+  if (data.length < period + 1) {
+    return [];
+  }
+
+  const trValues: number[] = [];
+
+  // Calculate True Range for each candle (starting from index 1)
+  for (let i = 1; i < data.length; i++) {
+    const high = data[i].high;
+    const low = data[i].low;
+    const prevClose = data[i - 1].close;
+
+    const tr = Math.max(
+      high - low,
+      Math.abs(high - prevClose),
+      Math.abs(low - prevClose)
+    );
+    trValues.push(tr);
+  }
+
+  // Calculate ATR (Wilder's Smoothing)
+  const atrValues: number[] = [];
+
+  // First ATR is simple average of first 'period' TR values
+  let firstATR = 0;
+  for (let i = 0; i < period; i++) {
+    firstATR += trValues[i];
+  }
+  firstATR /= period;
+  atrValues.push(Number(firstATR.toFixed(4)));
+
+  // Subsequent ATRs
+  let prevATR = firstATR;
+  for (let i = period; i < trValues.length; i++) {
+    const currentTR = trValues[i];
+    const atr = (prevATR * (period - 1) + currentTR) / period;
+    atrValues.push(Number(atr.toFixed(4)));
+    prevATR = atr;
+  }
+
+  return atrValues;
 }

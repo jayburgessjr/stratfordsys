@@ -22,6 +22,7 @@ export interface StrategyConfig {
 export enum StrategyType {
   MOVING_AVERAGE_CROSSOVER = 'MOVING_AVERAGE_CROSSOVER',
   MEAN_REVERSION = 'MEAN_REVERSION',
+  BREAKOUT = 'BREAKOUT',
   MOMENTUM = 'MOMENTUM',
   CUSTOM = 'CUSTOM',
 }
@@ -45,6 +46,23 @@ export enum MovingAverageType {
   SIMPLE = 'SIMPLE', // SMA
   EXPONENTIAL = 'EXPONENTIAL', // EMA
   WEIGHTED = 'WEIGHTED', // WMA
+}
+
+// Mean Reversion specific parameters
+export interface MeanReversionParameters extends StrategyParameters {
+  readonly period: number;
+  readonly stdDev: number;
+  readonly useRSI: boolean;
+  readonly rsiPeriod?: number;
+  readonly rsiOverbought?: number;
+  readonly rsiOversold?: number;
+}
+
+// Breakout specific parameters
+export interface BreakoutParameters extends StrategyParameters {
+  readonly period: number;     // Donchian period
+  readonly stopLossATR?: number; // Multiplier for ATR stop
+  readonly useTrailingStop: boolean;
 }
 
 // Risk management configuration
@@ -289,3 +307,23 @@ export type SignalGenerator<T extends StrategyParameters> = (
   config: StrategyConfig,
   data: unknown // Will be TimeSeries when implemented
 ) => readonly StrategySignal[];
+
+// Standardized Execution Results
+export interface StrategyExecutionResult {
+  signals: StrategySignal[];
+  trades: Trade[];
+  positions: Position[];
+  performance: BasicPerformanceMetrics;
+  executionTime: number;
+}
+
+export interface BasicPerformanceMetrics {
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  winRate: number;
+  totalPnL: number;
+  netPnL: number;
+  totalCommissions: number;
+  averageTradeSize: number;
+}

@@ -4,78 +4,91 @@
 
 @layer base {
   :root {
-    /* Light Mode (Reserved/Minimal support, focusing on Dark) */
+    /* Personal Finance Tracker - Light Mode */
     --background: 220 14% 96%;
-    --foreground: 220 10% 10%;
+    --foreground: 224 20% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 10% 10%;
+    --card-foreground: 224 20% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 10% 10%;
+    --popover-foreground: 224 20% 10%;
 
-    --primary: 250 100% 65%;
-    /* Electric Violet */
-    --primary-foreground: 210 40% 98%;
+    --primary: 142 76% 36%;
+    /* Darker Green for Light Mode compatibility */
+    --primary-foreground: 355.7 100% 97.3%;
 
-    --secondary: 220 14% 90%;
-    --secondary-foreground: 220 10% 10%;
+    --secondary: 326 100% 45%;
+    /* Darker Pink for Light Mode */
+    --secondary-foreground: 355.7 100% 97.3%;
 
     --muted: 220 14% 90%;
     --muted-foreground: 220 8% 46%;
 
-    --accent: 250 100% 65%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 45 100% 45%;
+    /* Darker Yellow/Orange */
+    --accent-foreground: 224 20% 10%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 250 100% 65%;
+    --ring: 142 76% 36%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     /* Glass Effect Variables */
-    --glass-border: 220 13% 91%;
+    --glass-border: 220 13% 85%;
     --glass-bg: 0 0% 100%;
+
+    /* Grid Pattern */
+    --grid-color: rgba(0, 0, 0, 0.05);
   }
 
   .dark {
-    /* Deep Void Theme */
-    --background: 230 25% 6%;
-    /* #0B0C13 - Deep Space */
+    /* Personal Finance Tracker Theme - Deep Matte Dark */
+    --background: 224 20% 6%;
+    /* #0C0D12 */
     --foreground: 210 40% 98%;
 
-    --card: 230 25% 8%;
+    --card: 224 20% 10%;
+    /* #14161F */
     --card-foreground: 210 40% 98%;
 
-    --popover: 230 25% 8%;
+    --popover: 224 20% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 250 100% 65%;
-    /* Electric Violet */
-    --primary-foreground: 210 40% 98%;
+    --primary: 142 70% 50%;
+    /* Neon/Success Green */
+    --primary-foreground: 144 100% 11%;
 
-    --secondary: 230 20% 15%;
+    --secondary: 326 100% 60%;
+    /* Neon Pink */
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 230 20% 15%;
+    --muted: 224 20% 15%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 250 100% 65%;
+    --accent: 45 100% 55%;
+    /* Neon Yellow */
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 230 20% 15%;
-    --input: 230 20% 15%;
-    --ring: 250 100% 65%;
+    --border: 224 20% 15%;
+    --input: 224 20% 15%;
+    --ring: 142 70% 50%;
+
+    --radius: 1rem;
 
     /* Glass Effect Variables for Dark Mode */
-    --glass-border: 230 20% 20%;
-    --glass-bg: 230 25% 8%;
+    --glass-border: 224 20% 20%;
+    --glass-bg: 224 20% 10%;
+
+    /* Grid Pattern */
+    --grid-color: rgba(255, 255, 255, 0.05);
   }
 }
 
@@ -94,11 +107,11 @@
 
   /* Cosmic Glass Utilities */
   .glass {
-    @apply bg-background/60 backdrop-blur-xl border border-white/10 shadow-lg;
+    @apply bg-background/60 backdrop-blur-xl border border-border shadow-lg;
   }
 
   .glass-card {
-    @apply bg-card/40 backdrop-blur-md border border-white/5 shadow-xl hover:bg-card/60 transition-all duration-300;
+    @apply bg-card/40 backdrop-blur-md border border-border/50 shadow-xl hover:bg-card/60 transition-all duration-300;
   }
 
   .neon-glow {
@@ -116,7 +129,7 @@
   /* Grid Pattern Background */
   .bg-grid-pattern {
     background-size: 40px 40px;
-    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-image: linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
   }
 }

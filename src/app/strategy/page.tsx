@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,120 +8,256 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatCurrency, formatPercentage, cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { formatCurrency, cn } from '@/lib/utils';
 import {
   RefreshCw,
-  TrendingUp,
-  Bitcoin,
   Trophy,
-  Sparkles,
   ShieldCheck,
   Zap,
   Target,
-  Rocket,
   Brain,
   Layers,
   BarChart,
   Activity,
-  ArrowRight
+  ArrowRight,
+  CheckCircle2,
+  AlertTriangle,
+  Play,
+  FileText,
+  Lock,
+  GitBranch,
+  Search,
+  Timer
 } from 'lucide-react';
 
-const riskOptions = [
-  { value: 'LOW', label: 'Conservative', description: 'Capital preservation focus', color: 'text-emerald-400', border: 'border-emerald-500/50', bg: 'bg-emerald-500/10' },
-  { value: 'MEDIUM', label: 'Balanced', description: 'Growth with managed risk', color: 'text-blue-400', border: 'border-blue-500/50', bg: 'bg-blue-500/10' },
-  { value: 'HIGH', label: 'Aggressive', description: 'Maximum potential upside', color: 'text-purple-400', border: 'border-purple-500/50', bg: 'bg-purple-500/10' },
-] as const;
+// --- Types & Constants ---
 
-const personaOptions = [
-  { value: 'guardian', label: 'The Guardian', icon: ShieldCheck, desc: 'Prioritizes safety and consistent yield.' },
-  { value: 'strategist', label: 'The Strategist', icon: Brain, desc: 'Data-driven, diversified allocation.' },
-  { value: 'visionary', label: 'The Visionary', icon: Rocket, desc: 'High-conviction bets on future tech.' },
-] as const;
+type LifecycleStage = 'Draft' | 'Backtest' | 'Walk-Forward' | 'Monte Carlo' | 'Incubation' | 'Live-Ready';
 
-type StrategyResponse = {
-  strategy: {
-    title: string;
-    summary: string;
-    riskLevel: string;
-    budget: number;
-    expectedReturn: number;
-    confidence: number;
-    segments: Array<{
-      category: string;
-      allocation: number;
-      recommendations: Array<{
-        title: string;
-        action: string;
-        rationale: string;
-        confidence: number;
-        projectedReturn: number;
-      }>
-    }>
+type MetricRange = {
+  min: number;
+  max: number;
+  p50: number; // Median expectation
+};
+
+type StrategyDossier = {
+  id: string;
+  name: string;
+  archetype: string; // e.g., "Mean Reversion Breakout"
+  stage: LifecycleStage;
+  status: 'Pending' | 'Passed' | 'Failed' | 'Warning';
+
+  // Design Parameters
+  constraints: {
+    maxDrawdown: number;
+    leverageLimit: number;
+    minLiquidity: string;
+  };
+
+  // Validation Metrics (Davey-style Ranges)
+  metrics: {
+    expectedReturn: MetricRange;
+    maxDrawdown: MetricRange;
+    winRate: MetricRange;
+    profitFactor: MetricRange;
+    regimeSensitivity: 'Trending' | 'Mean Reverting' | 'High Volatility';
+    evidenceGrade: 'A' | 'B' | 'C' | 'D';
+  };
+
+  // System Rules (Output of design)
+  rules: {
+    entry: string;
+    exit: string;
+    stopLoss: string;
+    description: string;
+  };
+
+  // Artifacts (Evidence of work)
+  artifacts: {
+    backtest: { trades: number; period: string; sharpe: number };
+    walkForward: { folds: number; stabilityScore: number }; // 0-100
+    monteCarlo: { simulations: number; worstCaseDrawdown: number };
+    incubation: { daysRemaining: number; status: 'On Track' | 'Deviating' };
+  };
+
+  // Automated Governance
+  monitoring: {
+    killSwitchDD: number; // Hard stop level
+    efficiencyThreshold: number; // Soft warning level
   };
 };
 
-type FormState = {
-  budget: number;
-  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  persona: 'guardian' | 'strategist' | 'visionary';
-};
+const riskProfiles = [
+  {
+    value: 'LOW',
+    label: 'Conservative',
+    color: 'text-emerald-400',
+    border: 'border-emerald-500/50',
+    bg: 'bg-emerald-500/10',
+    constraints: 'Max DD ≤ 15% (95% MC), Required Incubation',
+    killLevel: 15
+  },
+  {
+    value: 'MEDIUM',
+    label: 'Balanced',
+    color: 'text-blue-400',
+    border: 'border-blue-500/50',
+    bg: 'bg-blue-500/10',
+    constraints: 'Max DD ≤ 25% (95% MC), Standard Sizing',
+    killLevel: 25
+  },
+  {
+    value: 'HIGH',
+    label: 'Aggressive',
+    color: 'text-purple-400',
+    border: 'border-purple-500/50',
+    bg: 'bg-purple-500/10',
+    constraints: 'Max DD ≤ 40%, Optional Incubation',
+    killLevel: 40
+  },
+] as const;
 
-const DEFAULT_FORM: FormState = {
-  budget: 1000,
-  riskLevel: 'MEDIUM',
-  persona: 'strategist',
-};
+const personas = [
+  { value: 'guardian', label: 'Guardian', icon: ShieldCheck, role: 'Risk Engineer', focus: 'Optimizes for tail risk & stability.' },
+  { value: 'strategist', label: 'Strategist', icon: Brain, role: 'Portfolio Architect', focus: 'Optimizes for correlation & smoothness.' },
+  { value: 'visionary', label: 'Visionary', icon: Zap, role: 'Edge Hunter', focus: 'Optimizes for upside variance.' },
+] as const;
 
 export default function StrategyPage() {
-  const [form, setForm] = useState<FormState>(DEFAULT_FORM);
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<StrategyResponse | null>(null);
+  const [budget, setBudget] = useState(5000);
+  const [riskLevel, setRiskLevel] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
+  const [persona, setPersona] = useState<'guardian' | 'strategist' | 'visionary'>('strategist');
 
-  const simulateGeneration = () => {
-    setLoading(true);
+  const [dossier, setDossier] = useState<StrategyDossier | null>(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [activeTab, setActiveTab] = useState('dossier');
+
+  // Helper to generate a realistic looking range
+  const generateRange = (base: number, vol: number): MetricRange => ({
+    min: Number((base * (1 - vol)).toFixed(2)),
+    p50: Number(base.toFixed(2)),
+    max: Number((base * (1 + vol)).toFixed(2)),
+  });
+
+  // Simulator Engine
+  const runPipeline = useCallback(() => {
+    setIsSimulating(true);
+    setDossier(null);
+
+    // Initial Draft
     setTimeout(() => {
-      setData({
-        strategy: {
-          title: "Quantum Growth Alpha",
-          summary: "Optimized for volatility capture in crypto markets with a stable equity hedge.",
-          riskLevel: form.riskLevel,
-          budget: form.budget,
-          expectedReturn: form.budget * (form.riskLevel === 'HIGH' ? 1.8 : form.riskLevel === 'MEDIUM' ? 1.4 : 1.15),
-          confidence: form.riskLevel === 'HIGH' ? 72 : 89,
-          segments: [
-            {
-              category: "Crypto Assets",
-              allocation: form.budget * 0.45,
-              recommendations: [
-                { title: "SOL/USD Long", action: "Spot Buy", rationale: "Network Activity Spike", confidence: 85, projectedReturn: 24 },
-                { title: "ETH Volatility", action: "Iron Condor", rationale: "Range Bound", confidence: 78, projectedReturn: 12 }
-              ]
-            },
-            {
-              category: "Equities",
-              allocation: form.budget * 0.35,
-              recommendations: [
-                { title: "NVDA", action: "Call Option", rationale: "AI Sector Momentum", confidence: 82, projectedReturn: 35 },
-                { title: "MSFT", action: "Hold", rationale: "Stable Cashflow", confidence: 92, projectedReturn: 8 }
-              ]
-            }
-          ]
-        }
-      });
-      setLoading(false);
-    }, 2000);
-  };
+      const isAggressive = riskLevel === 'HIGH';
+      const baseReturn = isAggressive ? 28 : (riskLevel === 'MEDIUM' ? 18 : 12);
+      const vol = isAggressive ? 0.4 : 0.2;
 
-  useEffect(() => {
-    // simulate initial load
-    simulateGeneration();
-  }, []);
+      const archetype = persona === 'guardian' ? 'Mean Reversion (Bollinger)' :
+        persona === 'strategist' ? 'Multi-Timeframe Trend' : 'Volatility Breakout (Impulse)';
+
+      const newDossier: StrategyDossier = {
+        id: `STRAT-${Math.floor(Math.random() * 10000)}`,
+        name: `Project ${['Alpha', 'Nebula', 'Zenith', 'Flux'][Math.floor(Math.random() * 4)]} ${new Date().getFullYear()}`,
+        archetype,
+        stage: 'Draft',
+        status: 'Pending',
+        constraints: {
+          maxDrawdown: riskProfiles.find(r => r.value === riskLevel)!.killLevel,
+          leverageLimit: isAggressive ? 3 : 1,
+          minLiquidity: '$2M Daily'
+        },
+        metrics: {
+          expectedReturn: generateRange(baseReturn, vol),
+          maxDrawdown: generateRange(baseReturn * 0.6, 0.3),
+          winRate: generateRange(isAggressive ? 45 : 62, 0.1),
+          profitFactor: generateRange(1.45, 0.15),
+          regimeSensitivity: isAggressive ? 'High Volatility' : 'Trending',
+          evidenceGrade: 'B'
+        },
+        rules: {
+          entry: "Close > EMA(50) AND RSI(14) < 70 AND Vol > AvgVol(20)*1.5",
+          exit: "Trailing Stop 2.5 ATR OR RSI(14) > 85",
+          stopLoss: "Fixed 1.5% Equity Risk per Trade",
+          description: "Exploits short-term momentum shifts while filtering for low-liquidity traps."
+        },
+        artifacts: {
+          backtest: { trades: 1420, period: '2018-2024', sharpe: 1.8 },
+          walkForward: { folds: 12, stabilityScore: 85 },
+          monteCarlo: { simulations: 5000, worstCaseDrawdown: riskLevel === 'HIGH' ? 32 : 14 },
+          incubation: { daysRemaining: 14, status: 'On Track' }
+        },
+        monitoring: {
+          killSwitchDD: riskProfiles.find(r => r.value === riskLevel)!.killLevel,
+          efficiencyThreshold: 0.8
+        }
+      };
+
+      setDossier(newDossier);
+
+      // Simulate pipeline progress
+      const stages: LifecycleStage[] = ['Backtest', 'Walk-Forward', 'Monte Carlo', 'Incubation'];
+      let currentStage = 0;
+
+      const interval = setInterval(() => {
+        if (currentStage >= stages.length) {
+          clearInterval(interval);
+          setIsSimulating(false);
+          setDossier(d => d ? ({ ...d, stage: 'Live-Ready', status: 'Passed' }) : null);
+          return;
+        }
+
+        setDossier(d => d ? ({ ...d, stage: stages[currentStage] }) : null);
+        currentStage++;
+      }, 800); // Fast forward animation
+
+    }, 600);
+  }, [riskLevel, persona]);
+
+  // Visual Stepper Component
+  const Stepper = ({ currentStage }: { currentStage: LifecycleStage }) => {
+    const stages: LifecycleStage[] = ['Draft', 'Backtest', 'Walk-Forward', 'Monte Carlo', 'Incubation', 'Live-Ready'];
+    const currentIndex = stages.indexOf(currentStage);
+
+    return (
+      <div className="flex items-center justify-between w-full relative">
+        {/* Progress Line */}
+        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-white/10 -z-0" />
+        <div
+          className="absolute top-1/2 left-0 h-0.5 bg-emerald-500/50 transition-all duration-500 -z-0"
+          style={{ width: `${(currentIndex / (stages.length - 1)) * 100}%` }}
+        />
+
+        {stages.map((stage, idx) => {
+          const isComplete = idx <= currentIndex;
+          const isActive = idx === currentIndex;
+          return (
+            <div key={stage} className="flex flex-col items-center gap-2 relative z-10">
+              <div
+                className={cn(
+                  "h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-black",
+                  isComplete ? "border-emerald-500 text-emerald-500" : "border-white/10 text-zinc-600",
+                  isActive && "ring-4 ring-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                )}
+              >
+                {isComplete ? <CheckCircle2 className="h-4 w-4" /> : <div className="h-2 w-2 rounded-full bg-current" />}
+              </div>
+              <span className={cn(
+                "text-[10px] uppercase font-bold tracking-wider transition-colors duration-300",
+                isComplete ? "text-emerald-400" : "text-zinc-600"
+              )}>
+                {stage === 'Walk-Forward' ? 'Walk-Fwd' : stage}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <DashboardLayout>
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 h-full flex flex-col gap-4">
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 h-full flex flex-col gap-6">
 
         {/* Header */}
         <div className="flex flex-none items-center justify-between px-1">
@@ -130,83 +266,59 @@ export default function StrategyPage() {
               Strategy Architect
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Design, backtest, and deploy algorithmic trading strategies
+              Design, validate, and incubate algorithmic trading systems
             </p>
           </div>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={simulateGeneration}
-            disabled={loading}
-            className="bg-primary hover:bg-primary/90 text-white shadow-[0_0_15px_-3px_#10b981] h-8 gap-2"
-          >
-            <Zap className={`h-3.5 w-3.5 ${loading ? 'animate-pulse' : 'fill-current'}`} />
-            {loading ? 'Synthesizing...' : 'Generate Alpha'}
-          </Button>
+          <div className="flex gap-3">
+            {dossier && (
+              <Badge variant="outline" className="h-9 px-4 border-emerald-500/30 text-emerald-400 bg-emerald-500/10 gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Pipeline Active
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Main Content Grid */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-          {/* Left Col: Controls */}
-          <Card className="lg:col-span-4 flex flex-col bg-black/40 border-white/5 backdrop-blur-xl h-full">
-            <CardHeader className="py-4 border-b border-white/5">
+          {/* Configuration Panel */}
+          <Card className="lg:col-span-4 flex flex-col bg-black/40 border-white/5 backdrop-blur-xl h-full border-r-0 rounded-r-none">
+            <CardHeader className="py-5 border-b border-white/5">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Layers className="h-4 w-4 text-primary" /> Configuration
+                <Layers className="h-4 w-4 text-primary" /> System Design
               </CardTitle>
+              <CardDescription className="text-xs">Define objectives & constraints</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin scrollbar-thumb-white/10">
 
-              {/* Capital Section */}
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Allocation Capital</Label>
-                  <span className="font-mono text-xl text-white font-bold">{formatCurrency(form.budget)}</span>
+                <Label className="uppercase text-[10px] tracking-widest text-zinc-500">Capital Allocation</Label>
+                <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/5">
+                  <span className="text-2xl font-mono text-white tracking-tight">{formatCurrency(budget)}</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400 hover:text-white"><RefreshCw className="h-3 w-3" /></Button>
                 </div>
-                <Slider
-                  value={[form.budget]}
-                  min={100} max={10000} step={100}
-                  onValueChange={([v]) => setForm(f => ({ ...f, budget: v }))}
-                  className="py-2"
-                />
-                <div className="flex justify-between gap-2">
-                  {[500, 1000, 5000].map(amt => (
-                    <Button
-                      key={amt}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setForm(f => ({ ...f, budget: amt }))}
-                      className={`flex-1 text-[10px] h-7 border-white/10 ${form.budget === amt ? 'bg-primary/20 border-primary text-primary' : 'bg-transparent text-muted-foreground hover:bg-white/5'}`}
-                    >
-                      ${amt}
-                    </Button>
-                  ))}
-                </div>
+                <Slider value={[budget]} min={1000} max={50000} step={1000} onValueChange={([v]) => setBudget(v)} className="py-2" />
               </div>
 
               <Separator className="bg-white/5" />
 
-              {/* Risk Section */}
               <div className="space-y-4">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Risk Profile</Label>
-                <div className="grid grid-cols-1 gap-3">
-                  {riskOptions.map(opt => (
+                <Label className="uppercase text-[10px] tracking-widest text-zinc-500">Risk Profile</Label>
+                <div className="space-y-3">
+                  {riskProfiles.map(p => (
                     <div
-                      key={opt.value}
-                      onClick={() => setForm(f => ({ ...f, riskLevel: opt.value }))}
-                      className={`
-                                        cursor-pointer p-3 rounded-xl border transition-all duration-300 relative overflow-hidden group
-                                        ${form.riskLevel === opt.value ? `${opt.border} ${opt.bg}` : 'border-white/5 bg-white/5 hover:border-white/10'}
-                                    `}
+                      key={p.value}
+                      onClick={() => setRiskLevel(p.value)}
+                      className={cn(
+                        "cursor-pointer p-3 rounded-xl border transition-all duration-300 group hover:bg-white/5",
+                        riskLevel === p.value ? `${p.border} ${p.bg}` : "border-white/5"
+                      )}
                     >
-                      <div className="flex justify-between items-center relative z-10">
-                        <div>
-                          <div className={`text-sm font-bold ${form.riskLevel === opt.value ? opt.color : 'text-zinc-400'}`}>{opt.label}</div>
-                          <div className="text-[10px] text-muted-foreground">{opt.description}</div>
-                        </div>
-                        {form.riskLevel === opt.value && <Target className={`h-4 w-4 ${opt.color}`} />}
+                      <div className="flex justify-between items-center mb-1">
+                        <span className={cn("text-sm font-bold", riskLevel === p.value ? p.color : "text-zinc-400")}>{p.label}</span>
+                        {riskLevel === p.value && <Target className={cn("h-4 w-4", p.color)} />}
                       </div>
-                      {form.riskLevel === opt.value && <div className={`absolute inset-0 opacity-10 ${opt.bg} blur-xl`} />}
+                      <p className="text-[10px] text-zinc-500 font-mono">{p.constraints}</p>
                     </div>
                   ))}
                 </div>
@@ -214,125 +326,247 @@ export default function StrategyPage() {
 
               <Separator className="bg-white/5" />
 
-              {/* Persona Section */}
               <div className="space-y-4">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">AI Agent Persona</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {personaOptions.map(p => {
+                <Label className="uppercase text-[10px] tracking-widest text-zinc-500">Optimization Goal (Persona)</Label>
+                <div className="grid grid-cols-1 gap-2">
+                  {personas.map(p => {
                     const Icon = p.icon;
-                    const isSelected = form.persona === p.value;
+                    const Active = persona === p.value;
                     return (
-                      <div
+                      <button
                         key={p.value}
-                        onClick={() => setForm(f => ({ ...f, persona: p.value }))}
-                        className={`
-                                            cursor-pointer flex flex-col items-center justify-center gap-2 p-3 rounded-xl border transition-all duration-200 text-center h-24
-                                            ${isSelected ? 'bg-white/10 border-white/20 shadow-lg text-white' : 'bg-transparent border-white/5 text-muted-foreground hover:bg-white/5'}
-                                        `}
+                        onClick={() => setPersona(p.value)}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-lg border text-left transition-all",
+                          Active ? "bg-white/10 border-white/20 text-white" : "border-transparent hover:bg-white/5 text-zinc-500"
+                        )}
                       >
-                        <Icon className={`h-5 w-5 ${isSelected ? 'text-primary' : 'text-zinc-500'}`} />
-                        <span className="text-[10px] font-medium leading-tight">{p.label}</span>
-                      </div>
+                        <div className={cn("p-2 rounded-md", Active ? "bg-white/10" : "bg-white/5")}>
+                          <Icon className={cn("h-4 w-4", Active ? "text-primary" : "text-zinc-600")} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold">{p.label}</div>
+                          <div className="text-[10px] opacity-70">{p.focus}</div>
+                        </div>
+                      </button>
                     )
                   })}
                 </div>
-                <p className="text-[10px] text-center text-muted-foreground italic min-h-[1.5em]">
-                  "{personaOptions.find(p => p.value === form.persona)?.desc}"
-                </p>
               </div>
+
+              <Button
+                size="lg"
+                className={cn("w-full gap-2 mt-4 font-bold shadow-xl transition-all",
+                  isSimulating ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02]"
+                )}
+                onClick={runPipeline}
+                disabled={isSimulating}
+              >
+                {isSimulating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                {isSimulating ? "Running Validation Suite..." : "Initialize Pipeline"}
+              </Button>
 
             </CardContent>
           </Card>
 
-          {/* Right Col: Visualization */}
-          <div className="lg:col-span-8 h-full min-h-0 flex flex-col gap-6">
+          {/* Strategy Dossier / Results Panel */}
+          <div className="lg:col-span-8 flex flex-col gap-6 h-full">
 
-            {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-4 flex-none h-32">
-              <Card className="bg-gradient-to-br from-indigo-950/30 to-black border-indigo-500/20 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity"><Zap className="h-12 w-12 text-indigo-400" /></div>
-                <CardContent className="flex flex-col justify-center h-full p-6">
-                  <span className="text-xs font-medium text-indigo-300 uppercase tracking-wider mb-1">Expected Return</span>
-                  <div className="text-3xl font-bold text-white mb-1">{data ? formatCurrency(data.strategy.expectedReturn) : '---'}</div>
-                  <Badge variant="outline" className="w-fit border-indigo-500/30 text-indigo-300 bg-indigo-500/10 text-[10px]">
-                    ROI: +{data ? ((data.strategy.expectedReturn - form.budget) / form.budget * 100).toFixed(1) : 0}%
-                  </Badge>
-                </CardContent>
-              </Card>
+            {!dossier ? (
+              <div className="h-full flex flex-col items-center justify-center text-zinc-600 border border-dashed border-white/5 rounded-3xl bg-black/20">
+                <Search className="h-12 w-12 mb-4 opacity-20" />
+                <p className="text-sm">Configure parameters and initialize pipeline to generate a Strategy Dossier.</p>
+              </div>
+            ) : (
+              <>
+                {/* Stepper Card */}
+                <Card className="bg-black/60 border-white/10 backdrop-blur-xl">
+                  <CardContent className="py-8 px-10">
+                    <Stepper currentStage={dossier.stage} />
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-gradient-to-br from-emerald-950/30 to-black border-emerald-500/20 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity"><Target className="h-12 w-12 text-emerald-400" /></div>
-                <CardContent className="flex flex-col justify-center h-full p-6">
-                  <span className="text-xs font-medium text-emerald-300 uppercase tracking-wider mb-1">Win Probability</span>
-                  <div className="text-3xl font-bold text-white mb-1">{data?.strategy.confidence ?? 0}%</div>
-                  <div className="w-full bg-emerald-950 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-emerald-400 h-full transition-all duration-1000" style={{ width: `${data?.strategy.confidence ?? 0}%` }} />
+                {/* Main Dossier Content */}
+                <Card className="flex-1 bg-black/40 border-white/5 overflow-hidden flex flex-col">
+
+                  {/* Dossier Header */}
+                  <div className="p-6 border-b border-white/5 flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h2 className="text-xl font-bold text-white tracking-tight">{dossier.name}</h2>
+                        <Badge variant="secondary" className="bg-white/5 text-zinc-400 font-mono text-[10px] tracking-widest">{dossier.id}</Badge>
+                        <Badge variant="outline" className={cn("border-0 font-bold",
+                          dossier.status === 'Pending' ? "text-yellow-500 bg-yellow-500/10" :
+                            dossier.status === 'Passed' ? "text-emerald-500 bg-emerald-500/10" : "text-red-500"
+                        )}>{dossier.status}</Badge>
+                      </div>
+                      <p className="text-sm text-zinc-400 flex items-center gap-2">
+                        <FileText className="h-3.5 w-3.5" /> Archetype: <span className="text-white">{dossier.archetype}</span>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Pipeline Grade</div>
+                      <div className="text-3xl font-black text-white">{dossier.metrics.evidenceGrade}</div>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
 
-              <Card className="bg-gradient-to-br from-rose-950/30 to-black border-rose-500/20 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity"><ShieldCheck className="h-12 w-12 text-rose-400" /></div>
-                <CardContent className="flex flex-col justify-center h-full p-6">
-                  <span className="text-xs font-medium text-rose-300 uppercase tracking-wider mb-1">Risk Factor</span>
-                  <div className="text-3xl font-bold text-white mb-1">{form.riskLevel}</div>
-                  <p className="text-[10px] text-rose-300/70">Max Drawdown: 12.5%</p>
-                </CardContent>
-              </Card>
-            </div>
+                  {/* Tabs */}
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+                    <div className="px-6 border-b border-white/5">
+                      <TabsList className="bg-transparent h-12 p-0 space-x-6">
+                        <TabsTrigger value="dossier" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-xs text-zinc-500 data-[state=active]:text-white uppercase tracking-wider">Metrics Dossier</TabsTrigger>
+                        <TabsTrigger value="rules" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-xs text-zinc-500 data-[state=active]:text-white uppercase tracking-wider">System Rules</TabsTrigger>
+                        <TabsTrigger value="evidence" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-xs text-zinc-500 data-[state=active]:text-white uppercase tracking-wider">Validation Evidence</TabsTrigger>
+                        <TabsTrigger value="monitoring" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 pb-3 text-xs text-zinc-500 data-[state=active]:text-white uppercase tracking-wider">Live Monitoring</TabsTrigger>
+                      </TabsList>
+                    </div>
 
-            {/* Strategy Details */}
-            <Card className="flex-1 min-h-0 bg-black/40 border-white/5 backdrop-blur-md flex flex-col">
-              <CardHeader className="py-4 border-b border-white/5 flex-none">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-sm">Strategy Breakdown</CardTitle>
-                  <Badge variant="outline" className="border-white/10 text-zinc-400">Generated: {new Date().toLocaleTimeString()}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-white/10">
-                {loading ? (
-                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4">
-                    <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-xs animate-pulse">Computing Optimal Allocation...</span>
-                  </div>
-                ) : data && (
-                  <div className="divide-y divide-white/5">
-                    {data.strategy.segments.map((seg, i) => (
-                      <div key={i} className="p-4 hover:bg-white/5 transition-colors">
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${i === 0 ? 'bg-orange-500/10 text-orange-400' : 'bg-blue-500/10 text-blue-400'}`}>
-                              {i === 0 ? <Bitcoin className="h-5 w-5" /> : <BarChart className="h-5 w-5" />}
-                            </div>
-                            <div>
-                              <h3 className="text-sm font-bold text-white">{seg.category}</h3>
-                              <p className="text-[10px] text-muted-foreground">Allocation: {formatCurrency(seg.allocation)} ({((seg.allocation / form.budget) * 100).toFixed(0)}%)</p>
+                    <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10">
+                      <TabsContent value="dossier" className="mt-0 h-full">
+                        <div className="grid grid-cols-2 gap-6">
+                          {/* Left: Performance Ranges */}
+                          <div className="space-y-6">
+                            <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2"><BarChart className="h-4 w-4" /> Performance Ranges (Monte Carlo)</h3>
+
+                            <div className="space-y-4">
+                              {[
+                                { label: 'Expected Return', metric: dossier.metrics.expectedReturn, suffix: '%', color: 'bg-emerald-500' },
+                                { label: 'Max Drawdown', metric: dossier.metrics.maxDrawdown, suffix: '%', color: 'bg-rose-500' },
+                                { label: 'Win Rate', metric: dossier.metrics.winRate, suffix: '%', color: 'bg-blue-500' }
+                              ].map((item, i) => (
+                                <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                  <div className="flex justify-between text-xs mb-2">
+                                    <span className="text-zinc-400">{item.label}</span>
+                                    <span className="text-white font-bold">{item.metric.p50}{item.suffix}</span>
+                                  </div>
+                                  <div className="h-2 bg-black rounded-full overflow-hidden relative">
+                                    {/* Range Bar */}
+                                    <div
+                                      className={cn("absolute h-full opacity-30", item.color)}
+                                      style={{ left: '20%', width: '60%' }} // Mock visualization of range
+                                    />
+                                    {/* Median Marker */}
+                                    <div
+                                      className={cn("absolute h-full w-1", item.color)}
+                                      style={{ left: '50%' }}
+                                    />
+                                  </div>
+                                  <div className="flex justify-between text-[10px] text-zinc-600 mt-1 font-mono">
+                                    <span>P90: {item.metric.min}{item.suffix}</span>
+                                    <span>P10: {item.metric.max}{item.suffix}</span>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground hover:text-white">
-                            Details <ArrowRight className="h-3 w-3" />
-                          </Button>
+
+                          {/* Right: Qualitative */}
+                          <div className="space-y-6">
+                            <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2"><Activity className="h-4 w-4" /> Behavior Profile</h3>
+
+                            <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+                              <div className="text-xs text-indigo-400 mb-1">Market Regime Sensitivity</div>
+                              <div className="text-lg font-bold text-white">{dossier.metrics.regimeSensitivity}</div>
+                              <p className="text-[10px] text-indigo-300/60 mt-2">
+                                System performs best during {dossier.metrics.regimeSensitivity.toLowerCase()} periods.
+                                Performance may degrade in choppy sideways markets.
+                              </p>
+                            </div>
+
+                            <div className="p-4 bg-zinc-900 border border-white/10 rounded-xl">
+                              <div className="text-xs text-zinc-400 mb-1">Profit Factor Impact</div>
+                              <div className="text-lg font-bold text-white">{dossier.metrics.profitFactor.min} - {dossier.metrics.profitFactor.max}</div>
+                              <p className="text-[10px] text-zinc-500 mt-2">
+                                High profit factor indicates robustness against slippage and commission drag.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="rules" className="mt-0 h-full space-y-6">
+                        <div className="bg-black/40 border border-white/10 rounded-xl p-6 font-mono text-xs space-y-4">
+                          <div className="grid grid-cols-[100px_1fr] gap-4">
+                            <span className="text-emerald-500 font-bold">ENTRY</span>
+                            <span className="text-zinc-300">{dossier.rules.entry}</span>
+                          </div>
+                          <Separator className="bg-white/5" />
+                          <div className="grid grid-cols-[100px_1fr] gap-4">
+                            <span className="text-rose-500 font-bold">EXIT</span>
+                            <span className="text-zinc-300">{dossier.rules.exit}</span>
+                          </div>
+                          <Separator className="bg-white/5" />
+                          <div className="grid grid-cols-[100px_1fr] gap-4">
+                            <span className="text-blue-500 font-bold">RISK</span>
+                            <span className="text-zinc-300">{dossier.rules.stopLoss}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-zinc-500 italic border-l-2 border-white/10 pl-4 py-1">
+                          "{dossier.rules.description}"
+                        </p>
+                      </TabsContent>
+
+                      <TabsContent value="evidence" className="mt-0 h-full space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                            <div className="flex items-center gap-2 mb-2">
+                              <GitBranch className="h-4 w-4 text-emerald-400" />
+                              <span className="text-xs font-bold text-white">Walk-Forward Analysis</span>
+                            </div>
+                            <div className="text-2xl font-bold text-white">{dossier.artifacts.walkForward.stabilityScore}/100</div>
+                            <p className="text-[10px] text-zinc-500">Stability Score across {dossier.artifacts.walkForward.folds} out-of-sample folds.</p>
+                          </div>
+                          <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                            <div className="flex items-center gap-2 mb-2">
+                              <AlertTriangle className="h-4 w-4 text-amber-400" />
+                              <span className="text-xs font-bold text-white">Monte Carlo Stress</span>
+                            </div>
+                            <div className="text-2xl font-bold text-white">{dossier.artifacts.monteCarlo.worstCaseDrawdown}%</div>
+                            <p className="text-[10px] text-zinc-500">Worst case drawdown in {dossier.artifacts.monteCarlo.simulations} simulations.</p>
+                          </div>
                         </div>
 
-                        <div className="space-y-2 pl-12">
-                          {seg.recommendations.map((rec, j) => (
-                            <div key={j} className="flex items-center justify-between p-2 rounded border border-white/5 bg-black/20 text-xs">
-                              <span className="font-semibold text-zinc-300 w-24">{rec.title}</span>
-                              <Badge variant="secondary" className="bg-white/5 text-zinc-400 border-0 h-5 font-normal">{rec.action}</Badge>
-                              <span className="text-zinc-500 hidden md:block">{rec.rationale}</span>
-                              <div className="flex items-center gap-4">
-                                <span className="text-muted-foreground">Conf: <span className={rec.confidence > 80 ? 'text-emerald-400' : 'text-yellow-400'}>{rec.confidence}%</span></span>
-                                <span className="font-bold text-emerald-400">+{rec.projectedReturn}%</span>
-                              </div>
+                        <div className="bg-gradient-to-br from-zinc-900 to-black rounded-xl p-6 border border-white/5 flex items-center justify-center min-h-[200px]">
+                          <div className="text-center space-y-2">
+                            <Timer className="h-8 w-8 text-white/20 mx-auto" />
+                            <h4 className="text-sm font-bold text-white">Incubation Status</h4>
+                            <p className="text-xs text-zinc-500">System is currently {dossier.artifacts.incubation.daysRemaining} days away from Live Certification.</p>
+                            <div className="w-48 h-1 bg-white/10 rounded-full mx-auto mt-4 overflow-hidden">
+                              <div className="w-1/2 h-full bg-emerald-500" />
                             </div>
-                          ))}
+                            <p className="text-[10px] text-emerald-500 font-mono mt-1">Status: {dossier.artifacts.incubation.status}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      </TabsContent>
+
+                      <TabsContent value="monitoring" className="mt-0 h-full">
+                        <div className="space-y-4">
+                          <div className="flex items-start gap-4 p-4 border border-rose-500/20 bg-rose-500/5 rounded-xl">
+                            <Lock className="h-5 w-5 text-rose-500 mt-0.5" />
+                            <div>
+                              <h4 className="text-sm font-bold text-rose-400">Hard Kill Switch</h4>
+                              <p className="text-xs text-rose-300/70 mb-2">If strategy equity drops below this level, purely liquidate all positions and disable automation.</p>
+                              <div className="text-xl font-mono font-bold text-white">{dossier.monitoring.killSwitchDD}% Drawdown</div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-4 p-4 border border-yellow-500/20 bg-yellow-500/5 rounded-xl">
+                            <Activity className="h-5 w-5 text-yellow-500 mt-0.5" />
+                            <div>
+                              <h4 className="text-sm font-bold text-yellow-400">Efficiency Watchdog</h4>
+                              <p className="text-xs text-yellow-300/70 mb-2">Warning triggers if realized performance deviates effectively from backtest expectancy.</p>
+                              <div className="text-xl font-mono font-bold text-white">Efficiency &lt; {dossier.monitoring.efficiencyThreshold}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                    </div>
+                  </Tabs>
+
+                </Card>
+              </>
+            )}
 
           </div>
 

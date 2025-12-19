@@ -8,9 +8,9 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "relative rounded-xl border border-white/5 bg-black/40 text-card-foreground shadow-xl backdrop-blur-xl transition-all duration-300 hover:bg-black/50 hover:border-white/10 hover:shadow-2xl hover:shadow-primary/5",
+      "relative rounded-xl border border-border bg-card/50 text-card-foreground shadow-xl backdrop-blur-xl transition-all duration-300 hover:bg-card/80 hover:border-border/80 hover:shadow-2xl hover:shadow-primary/5",
       "flex flex-col overflow-hidden",
-      "before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-white/5 before:to-transparent before:opacity-0 before:transition-opacity hover:before:opacity-100",
+      "before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-br before:from-foreground/5 before:to-transparent before:opacity-0 before:transition-opacity hover:before:opacity-100",
       className
     )}
     {...props}
@@ -24,7 +24,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6 border-b border-white/5 bg-white/[0.02]", className)}
+    className={cn("flex flex-col space-y-1.5 p-6 border-b border-border/50 bg-foreground/[0.02]", className)}
     {...props}
   />
 ))
@@ -37,7 +37,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight bg-gradient-to-br from-white to-zinc-400 bg-clip-text text-transparent",
+      "text-lg font-semibold leading-none tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent",
       className
     )}
     {...props}
